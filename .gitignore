@@ -35,6 +35,7 @@ build/
 .ruff_cache/
 .tox/
 .nox/
+requirements*.txt
 pip-log.txt
 pip-delete-this-directory.txt
 node_modules/
