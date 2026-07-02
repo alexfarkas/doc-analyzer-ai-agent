@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import MainMenu from './components/MainMenu';
 import ResourcesUpload from './components/ResourcesUpload';
 import StatisticsSummary from './components/StatisticsSummary';
@@ -26,6 +26,11 @@ function App() {
   });
 
   const [judgementKey, setJudgementKey] = useState(0);
+
+  // 🔹 НОВОЕ: Объект статусов агентов { [agentId]: 'idle' | 'loading' | 'done' }
+  const [agentStatuses, setAgentStatuses] = useState({});
+
+  const abortControllerRef = useRef(null);
 
   const initAgent = (availableModels, availableAssignments) => ({
     model: availableModels[0]?.name || '',
@@ -174,8 +179,18 @@ function App() {
     setStats({ elapsed: null, totalTokens: null, inputTokens: null, outputTokens: null });
     setJudgementKey(prev => prev + 1);
 
+    // 🔹 Инициализируем статусы всех агентов как 'idle'
+    // agentId начинается с 1, индекс в selectedAgents = agentId - 1
+    const initialStatuses = {};
+    for (let i = 0; i < selectedAgentsCount; i++) {
+      initialStatuses[i + 1] = 'idle';
+    }
+    setAgentStatuses(initialStatuses);
+
+    abortControllerRef.current = new AbortController();
+
     try {
-      const response = await fetch('/api/doc/analyze', {
+      const response = await fetch('/api/doc/analyze/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,46 +200,111 @@ function App() {
             model: a.model,
             assignment: a.assignment
           }))
-        })
+        }),
+        signal: abortControllerRef.current.signal
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Ошибка анализа документов');
+        throw new Error(errData.detail || errData.message || 'Ошибка анализа документов');
       }
 
-      const data = await response.json();
-      const resultArray = Array.isArray(data.result) ? data.result : [data.result];
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      const normalizedResult = resultArray.map(item => {
-        if (typeof item === 'string') return { answer: item, score: undefined, judgement: undefined };
-        return {
-          answer: item.answer ?? '',
-          score: item.score,
-          judgement: item.judgement
-        };
-      });
+      while (true) {
+        const { done, value } = await reader.read();
 
-      setAnalysisResult(normalizedResult);
+        if (done) break;
 
-      if (data.token_usage) {
-        setStats({
-          elapsed: data.elapsed,
-          totalTokens: data.token_usage.total_tokens || 0,
-          inputTokens: data.token_usage.input_tokens || 0,
-          outputTokens: data.token_usage.output_tokens || 0
-        });
-      } else if (data.elapsed != null) {
-        setStats(prev => ({ ...prev, elapsed: data.elapsed }));
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        let currentEvent = null;
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+
+            try {
+              const data = JSON.parse(dataStr);
+
+              switch (currentEvent) {
+                case 'agent_start':
+                  // 🔹 Обновляем статус конкретного агента по его id
+                  setAgentStatuses(prev => ({
+                    ...prev,
+                    [data.agentId]: 'loading'
+                  }));
+                  break;
+
+                case 'agent_end':
+                  setAgentStatuses(prev => ({
+                    ...prev,
+                    [data.agentId]: 'done'
+                  }));
+                  break;
+
+                case 'complete':
+                  const resultArray = Array.isArray(data.result) ? data.result : [data.result];
+
+                  const normalizedResult = resultArray.map(item => {
+                    if (typeof item === 'string') return { answer: item, score: undefined, judgement: undefined };
+                    return {
+                      answer: item.answer ?? '',
+                      score: item.score,
+                      judgement: item.judgement
+                    };
+                  });
+
+                  setAnalysisResult(normalizedResult);
+
+                  if (data.token_usage) {
+                    setStats({
+                      elapsed: data.elapsed,
+                      totalTokens: data.token_usage.total_tokens || 0,
+                      inputTokens: data.token_usage.input_tokens || 0,
+                      outputTokens: data.token_usage.output_tokens || 0
+                    });
+                  } else if (data.elapsed != null) {
+                    setStats(prev => ({ ...prev, elapsed: data.elapsed }));
+                  }
+                  break;
+
+                case 'error':
+                  throw new Error(data.message || 'Ошибка анализа');
+              }
+            } catch (e) {
+              if (e.message !== 'Ошибка анализа') {
+                console.warn('Failed to parse SSE data:', e);
+              } else {
+                throw e;
+              }
+            }
+
+            currentEvent = null;
+          }
+        }
       }
+
     } catch (err) {
-      setError(err.message);
+      if (err.name !== 'AbortError') {
+        setError(err.message);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+      // Сбрасываем статусы всех агентов в исходное состояние
+      // после завершения анализа (успешного или с ошибкой)
+      setAgentStatuses({});
     }
   };
 
-  // 🔹 Получаем список моделей для текущей выбранной роли
   const currentRole = rolesConfig.find(r => r.api_param === selectedRoleApi);
   const availableModels = currentRole?.models || [];
 
@@ -241,6 +321,7 @@ function App() {
           selectedRoleApi={selectedRoleApi}
           selectedAgentsCount={selectedAgentsCount}
           selectedAgents={selectedAgents}
+          agentStatuses={agentStatuses}
           onRoleChange={handleRoleChange}
           onAgentsCountChange={handleAgentsCountChange}
           onAgentModelChange={handleAgentModelChange}
