@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 async def correct_result(
-    correctors: list[Agent], answers: list[str], role: Role
+    correctors: list[Agent],
+    answers: list[str],
+    role: Role,
+    progress_callback=None,
 ) -> dict:
     new_answers = []
     correctors_token_usage = create_token_usage()
@@ -17,14 +20,32 @@ async def correct_result(
 
     for answer_index, answer in enumerate(answers, start=1):
         result = {"new_answer": answer}
-        for index, corrector in enumerate(correctors, start=1):
+        for corrector in correctors:
+            if progress_callback:
+                await progress_callback(
+                    "agent_start",
+                    {
+                        "agentId": corrector.agent_id,
+                        "agentType": "corrector",
+                    },
+                )
+
             logger.info(
-                f"Corrector {index}: correction of document {answer_index} is starting..."
+                f"Agent {corrector.agent_id} (corrector): correction of document {answer_index} is starting..."
             )
             result = await _correct_answer(corrector, result["new_answer"], role)
             logger.info(
-                f"Corrector {index}: correction of document {answer_index} is completed"
+                f"Agent {corrector.agent_id} (corrector): correction of document {answer_index} is completed"
             )
+
+            if progress_callback:
+                await progress_callback(
+                    "agent_end",
+                    {
+                        "agentId": corrector.agent_id,
+                        "agentType": "corrector",
+                    },
+                )
 
             token_usage = result["token_usage"]
             correctors_token_usage.add_usage(token_usage)

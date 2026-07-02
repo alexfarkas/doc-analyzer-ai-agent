@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import TypedDict, Annotated, Sequence, AsyncGenerator, Any
+from typing import TypedDict, Annotated, Sequence, AsyncGenerator
 
 from agent_enums import Assignment, Mode, Role
 from db_repository import PromptRepository
@@ -53,22 +53,25 @@ class Agent:
     async def create_agent(
         cls,
         llm_config: LLMConfig,
+        agent_id: int = 1,
         prompt_repository: PromptRepository | None = None,
         chromadb_client_factory: ChromaDBClientFactory | None = None,
     ) -> Agent:
         instance = cls()
         await instance._initialize(
-            llm_config, prompt_repository, chromadb_client_factory
+            llm_config, agent_id, prompt_repository, chromadb_client_factory
         )
         return instance
 
     async def _initialize(
         self,
         llm_config: LLMConfig,
+        agent_id: int = 0,
         prompt_repository: PromptRepository | None = None,
         chromadb_client_factory: ChromaDBClientFactory | None = None,
     ) -> None:
         self.llm_config = llm_config
+        self.agent_id = agent_id
         self._prompt_repository = prompt_repository
         self._chromadb_client_factory = chromadb_client_factory
 

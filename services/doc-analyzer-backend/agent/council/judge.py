@@ -9,7 +9,12 @@ from llm.token_usage import create_token_usage
 logger = logging.getLogger(__name__)
 
 
-async def judge_result(judges: list[Agent], answers: list[str], role: Role) -> dict:
+async def judge_result(
+    judges: list[Agent],
+    answers: list[str],
+    role: Role,
+    progress_callback=None,
+) -> dict:
     judgements = []
     scores = []
     judges_token_usage = create_token_usage()
@@ -21,16 +26,34 @@ async def judge_result(judges: list[Agent], answers: list[str], role: Role) -> d
         failed_scores = 0
         logger.info(f"Judgment for document {answer_index} is starting...")
 
-        for index, judge in enumerate(judges, start=1):
+        for judge in judges:
+            if progress_callback:
+                await progress_callback(
+                    "agent_start",
+                    {
+                        "agentId": judge.agent_id,
+                        "agentType": "judge",
+                    },
+                )
+
             logger.info(
-                f"Judge {index}: judgement for document {answer_index} is starting..."
+                f"Agent {judge.agent_id} (judge): judgement for document {answer_index} is starting..."
             )
             result = await judge.analyze_doc(
                 resources=[answer], role=role, assignment=Assignment.JUDGE
             )
             logger.info(
-                f"Judge {index}: judgement for document {answer_index} is completed"
+                f"Agent {judge.agent_id} (judge): judgement for document {answer_index} is completed"
             )
+
+            if progress_callback:
+                await progress_callback(
+                    "agent_end",
+                    {
+                        "agentId": judge.agent_id,
+                        "agentType": "judge",
+                    },
+                )
 
             answer_judgement = result["answer"]
             answer_judgements.append(answer_judgement)

@@ -1,4 +1,5 @@
 import logging
+from typing import Callable, Awaitable
 
 from agent_enums import Assignment, Role
 from db_repository import PromptRepository
@@ -12,6 +13,8 @@ from config.llm_config import llm_config
 from llm.token_usage import TokenUsage, create_token_usage
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[str, dict], Awaitable[None]]
 
 
 class Council:
@@ -52,9 +55,12 @@ class Council:
 
         self._token_usage = create_token_usage()
 
-        for agent_data in agents_data:
+        for agent_index, agent_data in enumerate(agents_data, start=1):
             agent = await Agent().create_agent(
-                llm_config, self._prompt_repository, self._chromadb_client_factory
+                llm_config,
+                agent_index,
+                self._prompt_repository,
+                self._chromadb_client_factory,
             )
             await agent.setup_model(agent_data.model)
             match agent_data.assignment:
@@ -72,15 +78,38 @@ class Council:
             f"agents: {len(self.agents)}, correctors: {len(self.correctors)}, judges: {len(self.judges)}"
         )
 
-    async def analyze_doc(self, resources: list[str], role: Role) -> dict:
+    async def analyze_doc(
+        self,
+        resources: list[str],
+        role: Role,
+        progress_callback: ProgressCallback | None = None,
+    ) -> dict:
         results = []
         logger.info(
             f"Council of {len(self.agents)} agents: doc analysis is starting..."
         )
-        for index, agent in enumerate(self.agents):
-            logger.info(f"Agent {index + 1}: doc analysis is starting...")
+        for agent in self.agents:
+            if progress_callback:
+                await progress_callback(
+                    "agent_start",
+                    {
+                        "agentId": agent.agent_id,
+                        "agentType": "exec",
+                    },
+                )
+
+            logger.info(f"Agent {agent.agent_id} (exec): doc analysis is starting...")
             results.append(await agent.analyze_doc(resources=resources, role=role))
-            logger.info(f"Agent {index + 1}: doc analysis is completed")
+            logger.info(f"Agent {agent.agent_id} (exec): doc analysis is completed")
+
+            if progress_callback:
+                await progress_callback(
+                    "agent_end",
+                    {
+                        "agentId": agent.agent_id,
+                        "agentType": "exec",
+                    },
+                )
 
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
 
@@ -107,7 +136,10 @@ class Council:
         if len(self.correctors) > 0:
             logger.info(f"{len(self.correctors)} correctors: correction is starting...")
             correctors_result = await correct_result(
-                correctors=self.correctors, answers=answers, role=role
+                correctors=self.correctors,
+                answers=answers,
+                role=role,
+                progress_callback=progress_callback,
             )
             logger.info(f"{len(self.correctors)} correctors:: correction is completed")
 
@@ -125,7 +157,10 @@ class Council:
         else:
             logger.info(f"{len(self.judges)} judges: judgement is starting...")
             judges_result = await judge_result(
-                judges=self.judges, answers=answers, role=role
+                judges=self.judges,
+                answers=answers,
+                role=role,
+                progress_callback=progress_callback,
             )
             logger.info(f"{len(self.judges)} judges:: judgement is completed")
 

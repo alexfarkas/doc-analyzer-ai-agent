@@ -69,6 +69,145 @@ async def api_doc_analyze(
 
 
 @router.post(
+    "/doc/analyze/stream",
+    response_model=AnalyzeDocResponse,
+    response_model_exclude_none=True,
+)
+async def api_doc_analyze_stream(
+    request: AnalyzeDocRequest,
+    agent: Agent = Depends(get_agent),
+    council: Council = Depends(get_council),
+):
+    async def generate():
+        try:
+            event_queue = asyncio.Queue()
+
+            async def progress_callback(event_type: str, data: dict):
+                await event_queue.put(
+                    {
+                        "event": event_type,
+                        "data": data,
+                    }
+                )
+
+            async def run_analysis():
+                try:
+                    if len(request.agents) > 1:
+                        await council.create_council(request.agents)
+                        result = await council.analyze_doc(
+                            resources=request.resources,
+                            role=request.role,
+                            progress_callback=progress_callback,
+                        )
+
+                        answers = result["answers"]
+                        judgements = result["judgements"]
+                        scores = result["scores"]
+
+                        final_result = {
+                            "result": [
+                                {
+                                    "answer": answer,
+                                    "judgement": judgement,
+                                    "score": score,
+                                }
+                                for answer, judgement, score in zip_longest(
+                                    answers, judgements, scores, fillvalue=None
+                                )
+                            ],
+                            "elapsed": result["elapsed"],
+                            "token_usage": result["token_usage"].model_dump()
+                            if result["token_usage"]
+                            else None,
+                        }
+                    elif len(request.agents) == 1:
+                        await progress_callback(
+                            "agent_start",
+                            {
+                                "agentId": 1,
+                                "agentType": "exec",
+                            },
+                        )
+
+                        result = await agent.analyze_doc(
+                            resources=request.resources,
+                            role=request.role,
+                            model=request.agents[0].model,
+                        )
+
+                        final_result = {
+                            "result": [
+                                {
+                                    "answer": result["answer"],
+                                }
+                            ],
+                            "elapsed": result["elapsed"],
+                            "token_usage": result["token_usage"].model_dump()
+                            if result["token_usage"]
+                            else None,
+                        }
+
+                        await progress_callback(
+                            "agent_end",
+                            {
+                                "agentId": 1,
+                                "agentType": "exec",
+                            },
+                        )
+                    else:
+                        raise AgentsListIsEmptyError()
+
+                    await event_queue.put(
+                        {
+                            "event": "complete",
+                            "data": final_result,
+                        }
+                    )
+
+                except Exception as e:
+                    logger.error(f"Documents analysis error: {e}", exc_info=True)
+                    await event_queue.put(
+                        {
+                            "event": "error",
+                            "data": {
+                                "message": str(e),
+                            },
+                        }
+                    )
+
+            analysis_task = asyncio.create_task(run_analysis())
+
+            while True:
+                event = await event_queue.get()
+
+                sse_message = f"event: {event['event']}\n"
+                sse_message += (
+                    f"data: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
+                )
+
+                yield sse_message
+
+                if event["event"] in ["complete", "error"]:
+                    break
+
+            await analysis_task
+
+        except Exception as e:
+            logger.error(f"Documents analysis stream error: {e}", exc_info=True)
+            yield f"event: error\ndata: {json.dumps({'message': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post(
     "/doc/clarify", response_model=ClarifyDocResponse, response_model_exclude_none=True
 )
 async def api_clarify_doc(
