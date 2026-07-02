@@ -71,7 +71,7 @@ def assemble_markdown(
     blocks: list[str],
     images: list[dict],
     path: Path,
-        config: LLMDocReaderConfig,
+    config: LLMDocReaderConfig,
     extra_meta: dict = {},
 ) -> str:
     img_md = []

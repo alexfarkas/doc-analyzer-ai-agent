@@ -17,7 +17,7 @@ class LLMMock(BaseChatModel):
         self,
         messages: list[BaseMessage],
         stop: list[str] | None = None,
-            run_manager: Any | None = None,
+        run_manager: Any | None = None,
         **kwargs: Any,
     ) -> ChatResult:
         return ChatResult(
