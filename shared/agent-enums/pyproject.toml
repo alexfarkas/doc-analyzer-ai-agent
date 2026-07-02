@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=82.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-enums"
+version = "1.0.0"
+description = "Общие enum для сервисов ИИ-агента"
+readme = "README.md"
+requires-python = ">=3.14"
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent_enums*"]
