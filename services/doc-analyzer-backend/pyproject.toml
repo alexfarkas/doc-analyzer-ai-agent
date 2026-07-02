@@ -1,0 +1,6 @@
+[project]
+name = "doc-analyzer-backend"
+version = "1.0.0"
+description = "Backend service for documents analyzer AI agent"
+readme = "README.md"
+requires-python = ">=3.14"
