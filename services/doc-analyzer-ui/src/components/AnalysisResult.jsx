@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm';
 
 export default function AnalysisResult({ content, isLoading, activeTab = 0, onTabChange }) {
   const [iterationSelections, setIterationSelections] = useState({});
-
   const [compareState, setCompareState] = useState(null);
 
   const parsedContent = useMemo(() => {
@@ -71,9 +70,16 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     );
   }
 
+  // 🔹 НОВОЕ: форматирование дробного score
+  const formatScore = (score) => {
+    if (score == null) return '';
+    if (Number.isInteger(score)) return score.toString();
+    return parseFloat(score.toFixed(2)).toString();
+  };
+
   const getTabTitle = (item, index) => {
     const base = `Ответ ${index + 1}`;
-    return item.score != null ? `${base} (Оценка: ${item.score})` : base;
+    return item.score != null ? `${base} (Оценка: ${formatScore(item.score)})` : base;
   };
 
   const MarkdownContent = ({ text }) => {
@@ -180,11 +186,9 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     }
   };
 
-  // 🔹 Компонент панели с числами-переключателями и контентом
   const IterationPanel = ({ side, iterationIndex }) => {
     return (
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Числа-переключатели (без подписи) */}
         <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
           {Array.from({ length: totalButtons }, (_, i) => {
             const isFinal = i === totalButtons - 1;
@@ -221,7 +225,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
           </span>
         </div>
 
-        {/* Контент с отступом для правой панели */}
         <div className={`flex-1 overflow-auto text-gray-900 ${side === 'left' ? 'pr-2' : 'pl-2'}`}>
           <MarkdownContent text={getDisplayText(safeActiveTab, iterationIndex)} />
         </div>
@@ -253,10 +256,18 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
+      {/* 🔹 Панель с оценкой для одного документа (когда нет вкладок) */}
+      {!showTabs && parsedContent[safeActiveTab]?.score != null && (
+        <div className="flex items-center px-2 py-2 border-b border-gray-200 bg-gray-50" style={{ minHeight: '40px' }}>
+          <span className="px-3 py-1.5 text-sm font-medium text-indigo-700 whitespace-nowrap">
+            Оценка: {formatScore(parsedContent[safeActiveTab].score)}
+          </span>
+        </div>
+      )}
+
       {/* Панель итераций + кнопка "Сравнить" */}
       {hasIterations && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
-          {/* Числа-переключатели (только в обычном режиме, без подписи "Версия:") */}
           {!compareState && (
             <>
               {Array.from({ length: totalButtons }, (_, i) => {
@@ -295,7 +306,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
             </>
           )}
 
-          {/* Кнопка "Сравнить" */}
           <button
             type="button"
             onClick={handleToggleCompare}
@@ -313,7 +323,7 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
-      {/* Контент: обычный режим или режим сравнения */}
+      {/* Контент */}
       <div className="flex-1 overflow-hidden flex">
         {compareState ? (
           <>
