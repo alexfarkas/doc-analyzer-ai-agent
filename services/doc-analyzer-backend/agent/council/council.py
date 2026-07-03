@@ -120,6 +120,7 @@ class Council:
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
 
         answers = []
+        iterations = []
         judgements = []
         scores = []
 
@@ -150,6 +151,7 @@ class Council:
             logger.info(f"{len(self.correctors)} correctors:: correction is completed")
 
             answers = correctors_result["answers"]
+            iterations = correctors_result["iterations"]
 
             correctors_token_usage = correctors_result["correctors_token_usage"]
             self._token_usage.add_usage(correctors_token_usage)
@@ -182,6 +184,7 @@ class Council:
 
         return {
             "answers": answers,
+            "iterations": iterations,
             "judgements": judgements,
             "scores": scores,
             "token_usage": self._token_usage,

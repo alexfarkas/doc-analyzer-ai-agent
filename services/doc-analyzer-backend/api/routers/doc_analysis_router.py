@@ -39,6 +39,7 @@ async def api_doc_analyze(
         )
 
         answers = result["answers"]
+        iterations = result["iterations"]
         judgements = result["judgements"]
         scores = result["scores"]
 
@@ -101,6 +102,7 @@ async def api_doc_analyze_stream(
                         )
 
                         answers = result["answers"]
+                        iterations = result["iterations"]
                         judgements = result["judgements"]
                         scores = result["scores"]
 
@@ -110,9 +112,14 @@ async def api_doc_analyze_stream(
                                     "answer": answer,
                                     "judgement": judgement,
                                     "score": score,
+                                    "answer_iterations": answer_iterations,
                                 }
-                                for answer, judgement, score in zip_longest(
-                                    answers, judgements, scores, fillvalue=None
+                                for answer, judgement, score, answer_iterations in zip_longest(
+                                    answers,
+                                    judgements,
+                                    scores,
+                                    iterations,
+                                    fillvalue=None,
                                 )
                             ],
                             "elapsed": result["elapsed"],

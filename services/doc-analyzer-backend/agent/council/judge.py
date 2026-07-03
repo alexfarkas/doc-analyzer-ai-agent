@@ -70,7 +70,7 @@ async def judge_result(
                 scores.append(None)
                 failed_scores += 1
                 logger.error(
-                    f"Error parsing score from judge agent answer {result["answer"][:15]}"
+                    f"Error parsing score from judge agent answer {result['answer'][:15]}"
                 )
             else:
                 score = parsed_score.group(1)

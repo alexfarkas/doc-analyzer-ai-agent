@@ -19,13 +19,15 @@ async def correct_result(
     correctors_elapsed = 0
     elapsed_lock = asyncio.Lock()
 
+    iterations: list[list[dict]] = [[{"answer": f"{idx}: x{answer}"}] for idx, answer in enumerate(answers)]
+
     input_queue = asyncio.Queue()
     queues = [input_queue]
     for _ in correctors:
         queues.append(asyncio.Queue())
 
-    for ids, answer in enumerate(answers):
-        await input_queue.put((ids, answer))
+    for idx, answer in enumerate(answers):
+        await input_queue.put((idx, answer, iterations[idx]))
     await input_queue.put(None)
 
     async def run_corrector(
@@ -54,11 +56,12 @@ async def correct_result(
                         await out_q.put(None)
                     break
 
-                idx, answer = item
+                idx, answer, iter_list = item
                 logger.info(
                     f"Agent {corrector.agent_id} (corrector): correction of document {idx + 1} is starting..."
                 )
                 result = await _correct_answer(corrector, answer, role)
+                new_answer = result["new_answer"]
                 logger.info(
                     f"Agent {corrector.agent_id} (corrector): correction of document {idx + 1} is completed"
                 )
@@ -67,7 +70,10 @@ async def correct_result(
                     correctors_token_usage.add_usage(result["token_usage"])
                     correctors_elapsed += result["elapsed"]
 
-                await out_q.put((idx, result["new_answer"]))
+                if not is_last:
+                    iter_list.append({"answer": new_answer})
+
+                await out_q.put((idx, new_answer, iter_list))
 
         except Exception as e:
             logger.error(f"Agent {corrector.agent_id} (corrector) error: {e}")
@@ -86,7 +92,7 @@ async def correct_result(
 
     tasks = []
     for i, corrector in enumerate(correctors):
-        is_last = (i == len(correctors) - 1)
+        is_last = i == len(correctors) - 1
         task = asyncio.create_task(
             run_corrector(corrector, queues[i], queues[i + 1], is_last)
         )
@@ -103,10 +109,11 @@ async def correct_result(
             break
 
     results.sort(key=lambda x: x[0])
-    new_answers = [answer for _, answer in results]
+    new_answers = [answer for _, answer, _ in results]
 
     return {
         "answers": new_answers,
+        "iterations": iterations,
         "correctors_token_usage": correctors_token_usage,
         "correctors_elapsed": correctors_elapsed,
     }
