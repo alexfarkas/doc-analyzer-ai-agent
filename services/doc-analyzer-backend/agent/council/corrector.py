@@ -19,7 +19,7 @@ async def correct_result(
     correctors_elapsed = 0
     elapsed_lock = asyncio.Lock()
 
-    iterations: list[list[dict]] = [[{"answer": f"{idx}: x{answer}"}] for idx, answer in enumerate(answers)]
+    iterations: list[list[dict]] = [[{"answer": answer}] for answer in answers]
 
     input_queue = asyncio.Queue()
     queues = [input_queue]
