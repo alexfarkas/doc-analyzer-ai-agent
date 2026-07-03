@@ -21,7 +21,7 @@ backend_config = ConfigResponse(
                     api_param=Assignment.POST_CORRECTOR.value, ui_title="Пост-корректор"
                 ),
             ],
-            max_agents=5,
+            max_agents=10,
         ),
         RoleData(
             api_param=Role.TECH_ANALYST.value,
@@ -37,7 +37,7 @@ backend_config = ConfigResponse(
                     api_param=Assignment.POST_CORRECTOR.value, ui_title="Пост-корректор"
                 ),
             ],
-            max_agents=5,
+            max_agents=10,
         ),
         RoleData(
             api_param=Role.CODE_REVIEWER.value,
@@ -53,7 +53,7 @@ backend_config = ConfigResponse(
                     api_param=Assignment.POST_CORRECTOR.value, ui_title="Пост-корректор"
                 ),
             ],
-            max_agents=5,
+            max_agents=10,
         ),
         RoleData(
             api_param=Role.TEACHER.value,
@@ -69,7 +69,7 @@ backend_config = ConfigResponse(
                     api_param=Assignment.POST_CORRECTOR.value, ui_title="Пост-корректор"
                 ),
             ],
-            max_agents=5,
+            max_agents=10,
         ),
     ]
 )

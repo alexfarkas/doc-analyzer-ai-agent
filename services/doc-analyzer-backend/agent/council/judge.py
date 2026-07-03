@@ -94,7 +94,7 @@ async def judge_result(
         )
         judgements.append(judgements_summary)
 
-        average_answer_score = int(round(answer_score / (len(judges) - failed_scores)))
+        average_answer_score = round(answer_score / (len(judges) - failed_scores), 1)
         logger.info(
             f"Average score from {len(judges)} judge agents: {average_answer_score}"
         )
