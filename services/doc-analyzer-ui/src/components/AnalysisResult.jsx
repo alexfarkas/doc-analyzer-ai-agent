@@ -1,18 +1,53 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function AnalysisResult({ content, isLoading, activeTab = 0, onTabChange }) {
+  const [iterationSelections, setIterationSelections] = useState({});
+
   const parsedContent = useMemo(() => {
     if (!content) return [];
     const arr = Array.isArray(content) ? content : [content];
     return arr.map(item => {
-      if (typeof item === 'string') return { answer: item, score: undefined };
-      return { answer: item.answer ?? '', score: item.score };
+      if (typeof item === 'string') {
+        return { answer: item, score: undefined, answer_iterations: [] };
+      }
+
+      const rawIterations = item.answer_iterations;
+      const iterations = Array.isArray(rawIterations)
+        ? rawIterations
+            .filter(iter => iter && typeof iter === 'object' && typeof iter.answer === 'string')
+            .map(iter => ({ answer: iter.answer }))
+        : [];
+
+      return {
+        answer: typeof item.answer === 'string' ? item.answer : '',
+        score: typeof item.score === 'number' ? item.score : undefined,
+        answer_iterations: iterations,
+      };
     });
   }, [content]);
 
-  // 🔹 Защита от выхода индекса за пределы массива
   const safeActiveTab = Math.min(activeTab, Math.max(0, parsedContent.length - 1));
+
+  const getSelectedIteration = (tabIndex) => {
+    const item = parsedContent[tabIndex];
+    if (!item) return 0;
+    return iterationSelections[tabIndex] ?? item.answer_iterations.length;
+  };
+
+  const getDisplayText = (tabIndex) => {
+    const item = parsedContent[tabIndex];
+    if (!item) return '';
+
+    const iterations = item.answer_iterations;
+    const selectedIteration = getSelectedIteration(tabIndex);
+
+    if (selectedIteration < iterations.length) {
+      return iterations[selectedIteration]?.answer ?? '';
+    }
+    return item.answer ?? '';
+  };
 
   if (isLoading) {
     return (
@@ -36,68 +71,148 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     return item.score != null ? `${base} (Оценка: ${item.score})` : base;
   };
 
-  const MarkdownContent = ({ text }) => (
-    <ReactMarkdown
-      components={{
-        h1: ({ children }) => <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-3 border-b border-gray-200 pb-2">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-xl font-semibold text-gray-800 mt-5 mb-2">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-lg font-medium text-gray-800 mt-4 mb-2">{children}</h3>,
-        h4: ({ children }) => <h4 className="text-base font-medium text-gray-700 mt-3 mb-1">{children}</h4>,
-        p: ({ children }) => <p className="mb-3 text-sm leading-relaxed">{children}</p>,
-        ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,
-        li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
-        code: ({ children, className }) => {
-          const isInline = !className?.includes('language-');
-          return isInline ? (
-            <code className="bg-gray-100 text-indigo-600 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
-          ) : (
-            <code className={className}>{children}</code>
-          );
-        },
-        pre: ({ children }) => (
-          <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto text-xs font-mono my-3 leading-relaxed">
-            {children}
-          </pre>
-        ),
-        blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-indigo-300 bg-indigo-50 pl-4 py-2 my-3 rounded-r text-sm text-indigo-800 italic">
-            {children}
-          </blockquote>
-        ),
-        table: ({ children }) => (
-          <div className="overflow-x-auto my-3 rounded-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">{children}</table>
-          </div>
-        ),
-        th: ({ children }) => (
-          <th className="px-3 py-2 text-left font-semibold text-gray-700 bg-gray-50 whitespace-nowrap">{children}</th>
-        ),
-        td: ({ children }) => (
-          <td className="px-3 py-2 text-gray-900 border-t border-gray-100 whitespace-nowrap">{children}</td>
-        ),
-        a: ({ children, href }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline break-all">
-            {children}
-          </a>
-        ),
-        hr: () => <hr className="my-4 border-gray-200" />,
-        img: ({ src, alt }) => (
-          <img src={src} alt={alt} className="max-w-full h-auto rounded-lg my-3 border border-gray-200" loading="lazy" />
-        ),
-      }}
-    >
-      {text}
-    </ReactMarkdown>
-  );
+  const MarkdownContent = ({ text }) => {
+    if (!text || text.trim() === '') {
+      return (
+        <div className="flex h-full items-center justify-center text-gray-400 text-sm italic py-8">
+          Нет содержимого для отображения
+        </div>
+      );
+    }
 
-  // 🔹 Вкладки показываются ТОЛЬКО если элементов > 1
+    return (
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => (
+              <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-3 border-b border-gray-200 pb-2">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-xl font-semibold text-gray-800 mt-5 mb-2">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-lg font-medium text-gray-800 mt-4 mb-2">
+                {children}
+              </h3>
+            ),
+            h4: ({ children }) => (
+              <h4 className="text-base font-medium text-gray-700 mt-3 mb-1">
+                {children}
+              </h4>
+            ),
+            p: ({ children }) => (
+              <p className="mb-3 text-sm leading-relaxed text-gray-900">{children}</p>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc pl-6 mb-3 space-y-1 text-gray-900">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-6 mb-3 space-y-1 text-gray-900">{children}</ol>
+            ),
+            li: ({ children }) => (
+              <li className="text-sm leading-relaxed text-gray-900">{children}</li>
+            ),
+            strong: ({ children }) => (
+              <strong className="font-semibold text-gray-900">{children}</strong>
+            ),
+            em: ({ children }) => (
+              <em className="italic text-gray-900">{children}</em>
+            ),
+            code: ({ children, className }) => {
+              const isInline = !className?.includes('language-');
+              return isInline ? (
+                <code className="bg-gray-100 text-indigo-600 px-1.5 py-0.5 rounded text-xs font-mono">
+                  {children}
+                </code>
+              ) : (
+                <code className={className}>{children}</code>
+              );
+            },
+            pre: ({ children }) => (
+              <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto text-xs font-mono my-3 leading-relaxed">
+                {children}
+              </pre>
+            ),
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-4 border-indigo-300 bg-indigo-50 pl-4 py-2 my-3 rounded-r text-sm text-indigo-800 italic">
+                {children}
+              </blockquote>
+            ),
+            table: ({ children }) => (
+              <div className="overflow-x-auto my-3 rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className="bg-gray-50">{children}</thead>
+            ),
+            tbody: ({ children }) => (
+              <tbody className="bg-white divide-y divide-gray-200">{children}</tbody>
+            ),
+            tr: ({ children }) => <tr>{children}</tr>,
+            th: ({ children }) => (
+              <th className="px-3 py-2 text-left font-semibold text-gray-700 whitespace-nowrap">
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className="px-3 py-2 text-gray-900 whitespace-normal">{children}</td>
+            ),
+            a: ({ children, href }) => (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-800 underline break-all"
+              >
+                {children}
+              </a>
+            ),
+            hr: () => <hr className="my-4 border-gray-200" />,
+            img: ({ src, alt }) => (
+              <img
+                src={src}
+                alt={alt}
+                className="max-w-full h-auto rounded-lg my-3 border border-gray-200"
+                loading="lazy"
+              />
+            ),
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </div>
+    );
+  };
+
   const showTabs = parsedContent.length > 1;
+
+  const currentIterations = parsedContent[safeActiveTab]?.answer_iterations || [];
+  const hasIterations = currentIterations.length > 0;
+  const totalButtons = currentIterations.length + 1;
+  const selectedIteration = getSelectedIteration(safeActiveTab);
+
+  const handleIterationSelect = (iterationIndex) => {
+    setIterationSelections(prev => ({
+      ...prev,
+      [safeActiveTab]: iterationIndex,
+    }));
+  };
 
   return (
     <div className="h-full flex flex-col">
       {showTabs && (
-        <div className="flex items-center gap-1 px-2 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto" style={{ height: '40px' }}>
+        <div
+          className="flex items-center gap-1 px-2 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto"
+          style={{ minHeight: '40px' }}
+        >
           {parsedContent.map((item, index) => (
             <button
               key={index}
@@ -117,10 +232,49 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
+      {hasIterations && (
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
+          <span className="text-xs font-medium text-gray-500 mr-2 whitespace-nowrap">
+            Версия:
+          </span>
+          {Array.from({ length: totalButtons }, (_, i) => {
+            const isFinal = i === totalButtons - 1;
+            const isSelected = selectedIteration === i;
+
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleIterationSelect(i)}
+                title={isFinal ? 'Финальный результат' : `Промежуточный результат ${i + 1}`}
+                className={`
+                  min-w-[32px] h-8 px-2 text-xs font-semibold rounded transition-all shrink-0
+                  ${isSelected
+                    ? isFinal
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-amber-500 text-white shadow-sm'
+                    : isFinal
+                      ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'
+                      : 'bg-white text-amber-600 border border-amber-200 hover:bg-amber-50'
+                  }
+                `}
+              >
+                {i + 1}
+              </button>
+            );
+          })}
+
+          <span className="ml-3 text-xs text-gray-500 whitespace-nowrap">
+            {selectedIteration === totalButtons - 1
+              ? '✨ Финальный результат'
+              : `📝 Промежуточный результат ${selectedIteration + 1} из ${currentIterations.length}`}
+          </span>
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto pr-2 text-gray-900">
-        {/* 🔹 ИСПРАВЛЕНИЕ: рендерим компонент, даже если answer пустой строкой */}
         {parsedContent[safeActiveTab] ? (
-          <MarkdownContent text={parsedContent[safeActiveTab].answer ?? ''} />
+          <MarkdownContent text={getDisplayText(safeActiveTab)} />
         ) : (
           <div className="flex h-full items-center justify-center text-gray-400 text-sm">
             Нет данных для отображения

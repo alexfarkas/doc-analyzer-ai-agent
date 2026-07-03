@@ -254,11 +254,21 @@ function App() {
                   const resultArray = Array.isArray(data.result) ? data.result : [data.result];
 
                   const normalizedResult = resultArray.map(item => {
-                    if (typeof item === 'string') return { answer: item, score: undefined, judgement: undefined };
+                    if (typeof item === 'string') {
+                      return {
+                        answer: item,
+                        score: undefined,
+                        judgement: undefined,
+                        answer_iterations: [],
+                      };
+                    }
                     return {
                       answer: item.answer ?? '',
                       score: item.score,
-                      judgement: item.judgement
+                      judgement: item.judgement,
+                      answer_iterations: Array.isArray(item.answer_iterations)
+                        ? item.answer_iterations
+                        : [],
                     };
                   });
 
