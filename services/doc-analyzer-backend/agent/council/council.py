@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Callable, Awaitable
 
@@ -84,11 +85,11 @@ class Council:
         role: Role,
         progress_callback: ProgressCallback | None = None,
     ) -> dict:
-        results = []
         logger.info(
             f"Council of {len(self.agents)} agents: doc analysis is starting..."
         )
-        for agent in self.agents:
+
+        async def run_agents(agent: Agent) -> dict:
             if progress_callback:
                 await progress_callback(
                     "agent_start",
@@ -97,20 +98,25 @@ class Council:
                         "agentType": "exec",
                     },
                 )
-
             logger.info(f"Agent {agent.agent_id} (exec): doc analysis is starting...")
-            results.append(await agent.analyze_doc(resources=resources, role=role))
-            logger.info(f"Agent {agent.agent_id} (exec): doc analysis is completed")
+            try:
+                return await agent.analyze_doc(resources=resources, role=role)
+            finally:
+                logger.info(f"Agent {agent.agent_id} (exec): doc analysis is completed")
+                if progress_callback:
+                    await progress_callback(
+                        "agent_end",
+                        {
+                            "agentId": agent.agent_id,
+                            "agentType": "exec",
+                        },
+                    )
 
-            if progress_callback:
-                await progress_callback(
-                    "agent_end",
-                    {
-                        "agentId": agent.agent_id,
-                        "agentType": "exec",
-                    },
-                )
-
+        results = list(
+            await asyncio.gather(
+                *[run_agents(agent) for agent in self.agents],
+            )
+        )
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
 
         answers = []
