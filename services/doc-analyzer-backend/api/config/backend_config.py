@@ -1,11 +1,17 @@
 from agent_enums import Assignment, Role
 
+from api.config.limit_data import LimitSettings, LimitThresholdMode
 from api.models.config.assignment_data import AssignmentData
 from api.models.config.config_response import ConfigResponse
 from api.models.config.model_data import ModelData
 from api.models.config.role_data import RoleData
 
 backend_config = ConfigResponse(
+    limit_settings=LimitSettings(
+        limit_threshold_mode=LimitThresholdMode.ABS_VALUE.value,
+        limit_warning_threshold=100_000,
+        limit_warning_threshold_pc=10,
+    ),
     roles=[
         RoleData(
             api_param=Role.SUMMARY_ANALYST.value,
