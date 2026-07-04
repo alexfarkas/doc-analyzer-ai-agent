@@ -8,4 +8,5 @@ class AnalyzeDocRequest(BaseModel):
     resources: list[str]
     role: Role
     agents: list[AgentData]
+    limit: int | None = None
     encoding: str = "utf-8"

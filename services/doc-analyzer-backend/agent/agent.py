@@ -15,6 +15,7 @@ from agent.prompts_storage import get_prompts
 from agent.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
 from config.llm_config import LLMConfig
 from config.provider_config import provider_config
+from data.app_state_manager import app_state
 from llm.llm_factory import LLMFactory
 from llm.token_counter import (
     calculate_token_usage,
@@ -104,9 +105,14 @@ class Agent:
         role: Role,
         assignment: Assignment = Assignment.EXEC,
         model: str | None = None,
+        limit: int | None = None,
     ) -> dict:
         start = time.perf_counter()
         logger.info("Doc analysis is starting...")
+        if limit:
+            logger.info(f"Tokens limit: {limit}")
+        else:
+            logger.info(f"Tokens limit is not set")
 
         if model is not None:
             await self.setup_model(model)
@@ -296,7 +302,8 @@ class Agent:
         }
 
     async def chat_stream(
-        self, user_message: str, model: str | None = None
+        self, user_message: str,
+        model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         start = time.perf_counter()
         logger.info("Chat stream is starting...")
@@ -381,9 +388,14 @@ class Agent:
                 elapsed = time.perf_counter() - start
                 logger.info(f"Chat stream is completed in {elapsed} seconds")
 
+                await app_state.add_token_usage(self._token_usage)
+                total_token_usage = await app_state.get_token_usage()
+                logger.info(f"Total token usage: {total_token_usage}")
+
                 result = json.dumps(
                     {
                         "token_usage": self._token_usage.model_dump(),
+                        "total_token_usage": total_token_usage.model_dump(),
                         "elapsed": elapsed,
                         "cost_rub": 0,
                     }

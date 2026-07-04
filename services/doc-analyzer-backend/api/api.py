@@ -9,6 +9,7 @@ from rag_client import ChromaDBClientFactory
 from agent.agent import Agent
 from agent.council.council import Council
 from api.config.logger_setup import setup_logging
+from api.routers.tokens_router import router as tokens_router
 from api.routers.data_sources_router import router as data_sources_router
 from api.routers.doc_analysis_router import router as doc_analysis_router
 from api.routers.system_router import router as system_router
@@ -78,6 +79,7 @@ app = FastAPI(
 app.include_router(system_router, tags=["System"])
 app.include_router(doc_analysis_router, tags=["Doc Analysis"])
 app.include_router(data_sources_router, tags=["Data Sources"])
+app.include_router(tokens_router, tags=["Tokens Data"])
 
 app.add_middleware(
     CORSMiddleware,

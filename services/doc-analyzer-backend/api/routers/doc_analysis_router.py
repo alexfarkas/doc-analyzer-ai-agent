@@ -8,7 +8,7 @@ from starlette.responses import StreamingResponse
 
 from agent.agent import Agent
 from agent.council.council import Council
-from api.dependencies.dependencies import get_agent, get_council
+from api.dependencies.dependencies import get_agent, get_council, get_app_state
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
@@ -18,6 +18,7 @@ from api.models.analisys.clarify_doc_request import ClarifyDocRequest
 from api.models.analisys.clarify_doc_response import ClarifyDocResponse
 from api.models.analisys.history_response import HistoryResponse
 from api.models.analisys.result_data import ResultData
+from data.app_state_manager import AppStateManager
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ async def api_doc_analyze_stream(
     request: AnalyzeDocRequest,
     agent: Agent = Depends(get_agent),
     council: Council = Depends(get_council),
+    app_state: AppStateManager = Depends(get_app_state),
 ):
     async def generate():
         try:
@@ -98,6 +100,7 @@ async def api_doc_analyze_stream(
                         result = await council.analyze_doc(
                             resources=request.resources,
                             role=request.role,
+                            limit=request.limit,
                             progress_callback=progress_callback,
                         )
 
@@ -105,6 +108,10 @@ async def api_doc_analyze_stream(
                         iterations = result["iterations"]
                         judgements = result["judgements"]
                         scores = result["scores"]
+
+                        await app_state.add_token_usage(result["token_usage"])
+                        total_token_usage = await app_state.get_token_usage()
+                        logger.info(f"Total token usage: {total_token_usage}")
 
                         final_result = {
                             "result": [
@@ -126,6 +133,7 @@ async def api_doc_analyze_stream(
                             "token_usage": result["token_usage"].model_dump()
                             if result["token_usage"]
                             else None,
+                            "total_token_usage": total_token_usage.model_dump(),
                         }
                     elif len(request.agents) == 1:
                         await progress_callback(
@@ -140,7 +148,12 @@ async def api_doc_analyze_stream(
                             resources=request.resources,
                             role=request.role,
                             model=request.agents[0].model,
+                            limit=request.limit,
                         )
+
+                        await app_state.add_token_usage(result["token_usage"])
+                        total_token_usage = await app_state.get_token_usage()
+                        logger.info(f"Total token usage: {total_token_usage}")
 
                         final_result = {
                             "result": [
@@ -152,6 +165,7 @@ async def api_doc_analyze_stream(
                             "token_usage": result["token_usage"].model_dump()
                             if result["token_usage"]
                             else None,
+                            "total_token_usage": total_token_usage.model_dump(),
                         }
 
                         await progress_callback(
@@ -161,6 +175,7 @@ async def api_doc_analyze_stream(
                                 "agentType": "exec",
                             },
                         )
+
                     else:
                         raise AgentsListIsEmptyError()
 
@@ -218,17 +233,25 @@ async def api_doc_analyze_stream(
     "/doc/clarify", response_model=ClarifyDocResponse, response_model_exclude_none=True
 )
 async def api_clarify_doc(
-    request: ClarifyDocRequest, agent: Agent = Depends(get_agent)
+    request: ClarifyDocRequest,
+    agent: Agent = Depends(get_agent),
+    app_state: AppStateManager = Depends(get_app_state),
 ):
     result = await agent.clarify(
         ai_answer=request.ai_answer,
         user_message=request.user_message,
         model=request.model,
     )
+
+    await app_state.add_token_usage(result["token_usage"])
+    total_token_usage = await app_state.get_token_usage()
+    logger.info(f"Total token usage: {total_token_usage}")
+
     return ClarifyDocResponse(
         result=ResultData(answer=result["answer"]),
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
+        total_token_usage=total_token_usage,
         cost_rub=result["cost_rub"],
     )
 
@@ -236,22 +259,36 @@ async def api_clarify_doc(
 @router.post(
     "/doc/chat", response_model=ChatDocResponse, response_model_exclude_none=True
 )
-async def api_chat(request: ChatDocRequest, agent: Agent = Depends(get_agent)):
+async def api_chat(
+    request: ChatDocRequest,
+    agent: Agent = Depends(get_agent),
+    app_state: AppStateManager = Depends(get_app_state),
+):
     result = await agent.chat(user_message=request.user_message, model=request.model)
+
+    await app_state.add_token_usage(result["token_usage"])
+    total_token_usage = await app_state.get_token_usage()
+    logger.info(f"Total token usage: {total_token_usage}")
+
     return ChatDocResponse(
         result=ResultData(answer=result["answer"]),
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
+        total_token_usage=total_token_usage,
         cost_rub=result["cost_rub"],
     )
 
 
 @router.post("/doc/chat/stream")
-async def api_chat_stream(request: ChatDocRequest, agent: Agent = Depends(get_agent)):
+async def api_chat_stream(
+    request: ChatDocRequest,
+    agent: Agent = Depends(get_agent),
+):
     async def generate():
         try:
             async for chunk in agent.chat_stream(
-                user_message=request.user_message, model=request.model
+                user_message=request.user_message,
+                model=request.model,
             ):
                 if chunk.startswith("\n__METADATA__:"):
                     data_json = chunk.replace("\n__METADATA__:", "")

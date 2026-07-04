@@ -83,11 +83,16 @@ class Council:
         self,
         resources: list[str],
         role: Role,
+        limit: int | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> dict:
         logger.info(
             f"Council of {len(self.agents)} agents: doc analysis is starting..."
         )
+        if limit:
+            logger.info(f"Tokens limit: {limit}")
+        else:
+            logger.info(f"Tokens limit is not set")
 
         async def run_agents(agent: Agent) -> dict:
             if progress_callback:
