@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-// 🔹 Утилита для стриминга чата через SSE (добавлен параметр model)
+// 🔹 Утилита для стриминга чата через SSE
+// 🔹 ИЗМЕНЕНО: onUsage теперь вызывается с двумя аргументами: (usage, totalUsage)
 const streamChatResponse = async (
   userMessage,
   agentIndex,
@@ -55,17 +56,25 @@ const streamChatResponse = async (
             const data = JSON.parse(dataStr);
 
             if (data.type === 'usage') {
-              onUsage?.({
-                input_tokens: data.input_tokens,
-                output_tokens: data.output_tokens,
-                total_tokens: data.total_tokens
-              });
+              // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
+              onUsage?.(
+                {
+                  input_tokens: data.input_tokens,
+                  output_tokens: data.output_tokens,
+                  total_tokens: data.total_tokens
+                },
+                data.total_token_usage
+              );
             } else if (data.token_usage) {
-              onUsage?.({
-                input_tokens: data.token_usage.input_tokens,
-                output_tokens: data.token_usage.output_tokens,
-                total_tokens: data.token_usage.total_tokens
-              });
+              // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
+              onUsage?.(
+                {
+                  input_tokens: data.token_usage.input_tokens,
+                  output_tokens: data.token_usage.output_tokens,
+                  total_tokens: data.token_usage.total_tokens
+                },
+                data.total_token_usage
+              );
             } else if (data.token) {
               const unescaped = data.token
                 .replace(/\\n/g, '\n')
@@ -174,6 +183,7 @@ export default function JudgementResult({
     }
   }, [activeTab]);
 
+  // 🔹 ИЗМЕНЕНО: передаём data.total_token_usage вторым аргументом в onStatsUpdate
   const handleClarifySubmit = useCallback(async () => {
     const userMessage = clarificationInputs[activeTab]?.trim();
     if (!userMessage || !currentAgentData) return;
@@ -214,8 +224,9 @@ export default function JudgementResult({
         });
       }
 
-      if (onStatsUpdate && data.token_usage) {
-        onStatsUpdate(data.token_usage);
+      // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
+      if (onStatsUpdate) {
+        onStatsUpdate(data.token_usage, data.total_token_usage);
       }
 
     } catch (err) {
@@ -349,10 +360,10 @@ export default function JudgementResult({
           };
         });
       },
-      // onUsage
-      (usage) => {
+      // 🔹 ИЗМЕНЕНО: onUsage принимает два аргумента
+      (usage, totalUsage) => {
         if (onStatsUpdate) {
-          onStatsUpdate(usage);
+          onStatsUpdate(usage, totalUsage);
         }
       }
     );

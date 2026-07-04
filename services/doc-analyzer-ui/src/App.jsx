@@ -6,6 +6,8 @@ import AnalysisResult from './components/AnalysisResult';
 import JudgementResult from './components/JudgementResult';
 
 const STORAGE_KEY = 'doc_analyzer_selection_v3';
+const LIMIT_STORAGE_KEY = 'doc_analyzer_limit';
+const LIMIT_SETTINGS_KEY = 'doc_analyzer_limit_settings';  // 🔹 НОВОЕ
 
 function App() {
   const [rolesConfig, setRolesConfig] = useState([]);
@@ -22,13 +24,45 @@ function App() {
     elapsed: null,
     totalTokens: null,
     inputTokens: null,
-    outputTokens: null
+    outputTokens: null,
+    totalTokensAll: null,
+    inputTokensAll: null,
+    outputTokensAll: null
   });
 
   const [judgementKey, setJudgementKey] = useState(0);
-
-  // 🔹 НОВОЕ: Объект статусов агентов { [agentId]: 'idle' | 'loading' | 'done' }
   const [agentStatuses, setAgentStatuses] = useState({});
+
+  // 🔹 Состояние модального окна подтверждения обновления
+  const [showReloadConfirm, setShowReloadConfirm] = useState(false);
+
+  const [limit, setLimit] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LIMIT_STORAGE_KEY);
+      if (saved !== null && saved !== '' && /^\d+$/.test(saved)) {
+        return saved;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  });
+
+  // 🔹 НОВОЕ: Настройки порогов предупреждений о лимите
+  const [limitSettings, setLimitSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LIMIT_SETTINGS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.limit_threshold_mode === 'abs_value' || parsed.limit_threshold_mode === 'percent')) {
+          return parsed;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
 
   const abortControllerRef = useRef(null);
 
@@ -37,12 +71,19 @@ function App() {
     assignment: availableAssignments[0]?.api_param || 'exec'
   });
 
+  // 🔹 Загрузка конфигурации ролей и настроек лимита
   useEffect(() => {
     fetch('/api/config')
       .then(res => res.json())
       .then(data => {
         const roles = data.roles || [];
         setRolesConfig(roles);
+
+        // 🔹 НОВОЕ: сохраняем limit_settings из ответа
+        if (data.limit_settings) {
+          setLimitSettings(data.limit_settings);
+        }
+
         if (roles.length === 0) return;
 
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -78,6 +119,32 @@ function App() {
       .catch(err => console.error('Failed to fetch /api/config:', err));
   }, []);
 
+  // 🔹 Загрузка суммарных данных о токенах при старте
+  useEffect(() => {
+    fetch('/api/tokens/total')
+      .then(async (res) => {
+        if (!res.ok) {
+          console.warn(`Failed to fetch /api/tokens/total: ${res.status}`);
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!data?.total_token_usage) return;
+
+        const usage = data.total_token_usage;
+        setStats((prev) => ({
+          ...prev,
+          totalTokensAll: usage.total_tokens ?? null,
+          inputTokensAll: usage.input_tokens ?? null,
+          outputTokensAll: usage.output_tokens ?? null,
+        }));
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch /api/tokens/total:', err);
+      });
+  }, []);
+
   useEffect(() => {
     if (selectedRoleApi && rolesConfig.length > 0) {
       const role = rolesConfig.find(r => r.api_param === selectedRoleApi);
@@ -94,6 +161,81 @@ function App() {
       }
     }
   }, [selectedRoleApi, selectedAgentsCount, selectedAgents, rolesConfig]);
+
+  useEffect(() => {
+    try {
+      if (limit !== '') {
+        localStorage.setItem(LIMIT_STORAGE_KEY, limit);
+      } else {
+        localStorage.removeItem(LIMIT_STORAGE_KEY);
+      }
+    } catch {
+      // Игнорируем ошибки localStorage
+    }
+  }, [limit]);
+
+  // 🔹 НОВОЕ: Синхронизация limitSettings с localStorage
+  useEffect(() => {
+    try {
+      if (limitSettings) {
+        localStorage.setItem(LIMIT_SETTINGS_KEY, JSON.stringify(limitSettings));
+      } else {
+        localStorage.removeItem(LIMIT_SETTINGS_KEY);
+      }
+    } catch {
+      // Игнорируем ошибки localStorage
+    }
+  }, [limitSettings]);
+
+  // 🔹 Перехват клавиш обновления страницы (F5, Ctrl+R, Cmd+R)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Если нет данных анализа — не перехватываем
+      if (analysisResult.length === 0) return;
+
+      // F5
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setShowReloadConfirm(true);
+        return;
+      }
+
+      // Ctrl+R / Ctrl+Shift+R (Windows/Linux) или Cmd+R / Cmd+Shift+R (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        setShowReloadConfirm(true);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [analysisResult]);
+
+  // 🔹 Защита от закрытия вкладки/окна браузера
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (analysisResult.length > 0) {
+        e.preventDefault();
+        // Современные браузеры игнорируют кастомный текст,
+        // но возврат строки всё равно вызывает стандартное окно подтверждения
+        e.returnValue = 'Вы уверены, что хотите обновить страницу? Данные анализа документов будут утеряны.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [analysisResult]);
+
+  // 🔹 Обработчики модального окна подтверждения обновления
+  const handleConfirmReload = useCallback(() => {
+    window.location.reload();
+  }, []);
+
+  const handleCancelReload = useCallback(() => {
+    setShowReloadConfirm(false);
+  }, []);
 
   const handleRoleChange = (newRoleApi) => {
     setSelectedRoleApi(newRoleApi);
@@ -156,14 +298,66 @@ function App() {
     });
   }, []);
 
-  const handleStatsUpdate = useCallback((usage) => {
-    if (!usage) return;
-    setStats(prev => ({
-      ...prev,
-      totalTokens: usage.total_tokens,
-      inputTokens: usage.input_tokens,
-      outputTokens: usage.output_tokens
-    }));
+  const handleStatsUpdate = useCallback((usage, totalUsage) => {
+    setStats(prev => {
+      const updated = { ...prev };
+
+      // Потрачено токенов (token_usage)
+      if (usage) {
+        updated.totalTokens = usage.total_tokens;
+        updated.inputTokens = usage.input_tokens;
+        updated.outputTokens = usage.output_tokens;
+      }
+
+      // Всего токенов (total_token_usage)
+      if (totalUsage) {
+        updated.totalTokensAll = totalUsage.total_tokens;
+        updated.inputTokensAll = totalUsage.input_tokens;
+        updated.outputTokensAll = totalUsage.output_tokens;
+      }
+
+      return updated;
+    });
+  }, []);
+
+  const handleLimitChange = useCallback((newLimit) => {
+    setLimit(newLimit);
+  }, []);
+
+  const handleClearTokens = useCallback(async () => {
+    try {
+      const response = await fetch('/api/tokens/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || errData.message || 'Ошибка очистки данных');
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setStats(prev => ({
+          ...prev,
+          totalTokensAll: null,
+          inputTokensAll: null,
+          outputTokensAll: null
+        }));
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: data.message || 'Не удалось очистить данные'
+        };
+      }
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || 'Ошибка соединения с сервером'
+      };
+    }
   }, []);
 
   const handleAnalyze = async () => {
@@ -176,11 +370,17 @@ function App() {
     setError('');
     setAnalysisResult([]);
     setActiveTab(0);
-    setStats({ elapsed: null, totalTokens: null, inputTokens: null, outputTokens: null });
+
+    setStats(prev => ({
+      ...prev,
+      elapsed: null,
+      totalTokens: null,
+      inputTokens: null,
+      outputTokens: null
+    }));
+
     setJudgementKey(prev => prev + 1);
 
-    // 🔹 Инициализируем статусы всех агентов как 'idle'
-    // agentId начинается с 1, индекс в selectedAgents = agentId - 1
     const initialStatuses = {};
     for (let i = 0; i < selectedAgentsCount; i++) {
       initialStatuses[i + 1] = 'idle';
@@ -190,17 +390,23 @@ function App() {
     abortControllerRef.current = new AbortController();
 
     try {
+      const requestBody = {
+        resources: resources.map(r => r.path),
+        role: selectedRoleApi,
+        agents: selectedAgents.map(a => ({
+          model: a.model,
+          assignment: a.assignment
+        }))
+      };
+
+      if (limit !== '') {
+        requestBody.limit = parseInt(limit, 10);
+      }
+
       const response = await fetch('/api/doc/analyze/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resources: resources.map(r => r.path),
-          role: selectedRoleApi,
-          agents: selectedAgents.map(a => ({
-            model: a.model,
-            assignment: a.assignment
-          }))
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
       });
 
@@ -236,7 +442,6 @@ function App() {
 
               switch (currentEvent) {
                 case 'agent_start':
-                  // 🔹 Обновляем статус конкретного агента по его id
                   setAgentStatuses(prev => ({
                     ...prev,
                     [data.agentId]: 'loading'
@@ -274,16 +479,26 @@ function App() {
 
                   setAnalysisResult(normalizedResult);
 
-                  if (data.token_usage) {
-                    setStats({
-                      elapsed: data.elapsed,
-                      totalTokens: data.token_usage.total_tokens || 0,
-                      inputTokens: data.token_usage.input_tokens || 0,
-                      outputTokens: data.token_usage.output_tokens || 0
-                    });
-                  } else if (data.elapsed != null) {
-                    setStats(prev => ({ ...prev, elapsed: data.elapsed }));
-                  }
+                  setStats(prev => {
+                    const updated = { ...prev };
+
+                    if (data.token_usage) {
+                      updated.elapsed = data.elapsed;
+                      updated.totalTokens = data.token_usage.total_tokens || 0;
+                      updated.inputTokens = data.token_usage.input_tokens || 0;
+                      updated.outputTokens = data.token_usage.output_tokens || 0;
+                    } else if (data.elapsed != null) {
+                      updated.elapsed = data.elapsed;
+                    }
+
+                    if (data.total_token_usage) {
+                      updated.totalTokensAll = data.total_token_usage.total_tokens || 0;
+                      updated.inputTokensAll = data.total_token_usage.input_tokens || 0;
+                      updated.outputTokensAll = data.total_token_usage.output_tokens || 0;
+                    }
+
+                    return updated;
+                  });
                   break;
 
                 case 'error':
@@ -309,8 +524,6 @@ function App() {
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
-      // Сбрасываем статусы всех агентов в исходное состояние
-      // после завершения анализа (успешного или с ошибкой)
       setAgentStatuses({});
     }
   };
@@ -362,6 +575,14 @@ function App() {
           totalTokens={stats.totalTokens}
           inputTokens={stats.inputTokens}
           outputTokens={stats.outputTokens}
+          totalTokensAll={stats.totalTokensAll}
+          inputTokensAll={stats.inputTokensAll}
+          outputTokensAll={stats.outputTokensAll}
+          limit={limit}
+          limitSettings={limitSettings}
+          onLimitChange={handleLimitChange}
+          onClearTokens={handleClearTokens}
+          isAnalyzing={isLoading}
         />
 
         <section className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
@@ -385,6 +606,61 @@ function App() {
           onStatsUpdate={handleStatsUpdate}
         />
       </main>
+
+      {/* 🔹 Модальное окно подтверждения обновления страницы */}
+      {showReloadConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-2xl p-5 max-w-md mx-4">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-5 h-5 text-amber-600"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-gray-900 mb-1">
+                  Подтверждение обновления
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Вы уверены, что хотите обновить страницу? Данные анализа документов будут утеряны.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleCancelReload}
+                className="px-4 py-1.5 text-sm font-medium text-gray-700
+                         bg-white border border-gray-300 rounded
+                         hover:bg-gray-50 transition"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReload}
+                className="px-4 py-1.5 text-sm font-medium text-white
+                         bg-amber-600 border border-amber-600 rounded
+                         hover:bg-amber-700 transition"
+              >
+                Обновить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
