@@ -161,7 +161,7 @@ class Council:
             correctors_token_usage = correctors_result["correctors_token_usage"]
             self._token_usage.add_usage(correctors_token_usage)
             logger.info(f"Correctors token usage: {correctors_token_usage}")
-            logger.info(f"Total token usage: {self._token_usage}")
+            logger.info(f"Overall token usage: {self._token_usage}")
 
             total_elapsed += correctors_result["correctors_elapsed"]
 
@@ -183,7 +183,7 @@ class Council:
             judges_token_usage = judges_result["judges_token_usage"]
             self._token_usage.add_usage(judges_token_usage)
             logger.info(f"Judges token usage: {judges_token_usage}")
-            logger.info(f"Total token usage: {self._token_usage}")
+            logger.info(f"Overall token usage: {self._token_usage}")
 
             total_elapsed += judges_result["judges_elapsed"]
 

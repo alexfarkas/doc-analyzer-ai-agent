@@ -13,9 +13,9 @@ from rag_client import ChromaDBClientFactory
 from agent.conversation_storage import ConversationHistory
 from agent.prompts_storage import get_prompts
 from agent.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
+from api.utils.total_token_usage_utils import update_and_get_total_token_usage
 from config.llm_config import LLMConfig
 from config.provider_config import provider_config
-from data.app_state_manager import app_state
 from llm.llm_factory import LLMFactory
 from llm.token_counter import (
     calculate_token_usage,
@@ -226,7 +226,7 @@ class Agent:
         )
         self._token_usage.add_usage(clarification_token_usage)
         logger.info(f"Clarification token usage: {clarification_token_usage}")
-        logger.info(f"Total token usage: {self._token_usage}")
+        logger.info(f"Overall token usage: {self._token_usage}")
 
         elapsed = time.perf_counter() - start
         logger.info(f"Clarification is completed in {elapsed} seconds")
@@ -289,7 +289,7 @@ class Agent:
         chat_token_usage = calculate_token_usage(result["messages"], self.llm_config)
         self._token_usage.add_usage(chat_token_usage)
         logger.info(f"Chat token usage: {self._token_usage}")
-        logger.info(f"Total token usage: {self._token_usage}")
+        logger.info(f"Overall token usage: {self._token_usage}")
 
         elapsed = time.perf_counter() - start
         logger.info(f"Chat is completed in {elapsed} seconds")
@@ -383,14 +383,12 @@ class Agent:
                 )
                 self._token_usage.add_usage(chat_stream_token_usage)
                 logger.info(f"Chat stream token usage: {chat_stream_token_usage}")
-                logger.info(f"Total token usage: {self._token_usage}")
+                logger.info(f"Overall token usage: {self._token_usage}")
 
                 elapsed = time.perf_counter() - start
                 logger.info(f"Chat stream is completed in {elapsed} seconds")
 
-                await app_state.add_token_usage(self._token_usage)
-                total_token_usage = await app_state.get_token_usage()
-                logger.info(f"Total token usage: {total_token_usage}")
+                total_token_usage = await update_and_get_total_token_usage(self._token_usage)
 
                 result = json.dumps(
                     {

@@ -1,14 +1,14 @@
 import asyncio
 import json
 import logging
-from itertools import zip_longest
 
+from itertools import zip_longest
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
 from agent.agent import Agent
 from agent.council.council import Council
-from api.dependencies.dependencies import get_agent, get_council, get_app_state
+from api.dependencies.dependencies import get_agent, get_council
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
@@ -18,7 +18,10 @@ from api.models.analisys.clarify_doc_request import ClarifyDocRequest
 from api.models.analisys.clarify_doc_response import ClarifyDocResponse
 from api.models.analisys.history_response import HistoryResponse
 from api.models.analisys.result_data import ResultData
-from data.app_state_manager import AppStateManager
+from api.utils.doc_analyze_runner import run_doc_analysis
+from api.utils.response_buiilder import build_clarify_chat_result
+from api.utils.sse_utils import stream_with_queue
+from api.utils.total_token_usage_utils import update_and_get_total_token_usage
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,8 @@ async def api_doc_analyze(
         judgements = result["judgements"]
         scores = result["scores"]
 
+        total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+
         return AnalyzeDocResponse(
             result=[
                 ResultData(answer=answer, judgement=judgement, score=score)
@@ -53,6 +58,7 @@ async def api_doc_analyze(
             ],
             elapsed=result["elapsed"],
             token_usage=result["token_usage"],
+            total_token_usage=total_token_usage,
             cost_rub=0,
         )
 
@@ -62,10 +68,14 @@ async def api_doc_analyze(
     result = await agent.analyze_doc(
         resources=request.resources, role=request.role, model=request.agents[0].model
     )
+
+    total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+
     return AnalyzeDocResponse(
         result=[ResultData(answer=result["answer"])],
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
+        total_token_usage=total_token_usage,
         cost_rub=result["cost_rub"],
     )
 
@@ -79,147 +89,44 @@ async def api_doc_analyze_stream(
     request: AnalyzeDocRequest,
     agent: Agent = Depends(get_agent),
     council: Council = Depends(get_council),
-    app_state: AppStateManager = Depends(get_app_state),
 ):
-    async def generate():
+    event_queue = asyncio.Queue()
+
+    async def progress_callback(event_type: str, data: dict):
+        await event_queue.put(
+            {
+                "event": event_type,
+                "data": data,
+            }
+        )
+
+    async def run_analysis():
         try:
-            event_queue = asyncio.Queue()
-
-            async def progress_callback(event_type: str, data: dict):
-                await event_queue.put(
-                    {
-                        "event": event_type,
-                        "data": data,
-                    }
-                )
-
-            async def run_analysis():
-                try:
-                    if len(request.agents) > 1:
-                        await council.create_council(request.agents)
-                        result = await council.analyze_doc(
-                            resources=request.resources,
-                            role=request.role,
-                            limit=request.limit,
-                            progress_callback=progress_callback,
-                        )
-
-                        answers = result["answers"]
-                        iterations = result["iterations"]
-                        judgements = result["judgements"]
-                        scores = result["scores"]
-
-                        await app_state.add_token_usage(result["token_usage"])
-                        total_token_usage = await app_state.get_token_usage()
-                        logger.info(f"Total token usage: {total_token_usage}")
-
-                        final_result = {
-                            "result": [
-                                {
-                                    "answer": answer,
-                                    "judgement": judgement,
-                                    "score": score,
-                                    "answer_iterations": answer_iterations,
-                                }
-                                for answer, judgement, score, answer_iterations in zip_longest(
-                                    answers,
-                                    judgements,
-                                    scores,
-                                    iterations,
-                                    fillvalue=None,
-                                )
-                            ],
-                            "elapsed": result["elapsed"],
-                            "token_usage": result["token_usage"].model_dump()
-                            if result["token_usage"]
-                            else None,
-                            "total_token_usage": total_token_usage.model_dump(),
-                        }
-                    elif len(request.agents) == 1:
-                        await progress_callback(
-                            "agent_start",
-                            {
-                                "agentId": 1,
-                                "agentType": "exec",
-                            },
-                        )
-
-                        result = await agent.analyze_doc(
-                            resources=request.resources,
-                            role=request.role,
-                            model=request.agents[0].model,
-                            limit=request.limit,
-                        )
-
-                        await app_state.add_token_usage(result["token_usage"])
-                        total_token_usage = await app_state.get_token_usage()
-                        logger.info(f"Total token usage: {total_token_usage}")
-
-                        final_result = {
-                            "result": [
-                                {
-                                    "answer": result["answer"],
-                                }
-                            ],
-                            "elapsed": result["elapsed"],
-                            "token_usage": result["token_usage"].model_dump()
-                            if result["token_usage"]
-                            else None,
-                            "total_token_usage": total_token_usage.model_dump(),
-                        }
-
-                        await progress_callback(
-                            "agent_end",
-                            {
-                                "agentId": 1,
-                                "agentType": "exec",
-                            },
-                        )
-
-                    else:
-                        raise AgentsListIsEmptyError()
-
-                    await event_queue.put(
-                        {
-                            "event": "complete",
-                            "data": final_result,
-                        }
-                    )
-
-                except Exception as e:
-                    logger.error(f"Documents analysis error: {e}", exc_info=True)
-                    await event_queue.put(
-                        {
-                            "event": "error",
-                            "data": {
-                                "message": str(e),
-                            },
-                        }
-                    )
-
-            analysis_task = asyncio.create_task(run_analysis())
-
-            while True:
-                event = await event_queue.get()
-
-                sse_message = f"event: {event['event']}\n"
-                sse_message += (
-                    f"data: {json.dumps(event['data'], ensure_ascii=False)}\n\n"
-                )
-
-                yield sse_message
-
-                if event["event"] in ["complete", "error"]:
-                    break
-
-            await analysis_task
-
+            final_result = await run_doc_analysis(
+                request=request,
+                agent=agent,
+                council=council,
+                progress_callback=progress_callback,
+            )
+            await event_queue.put(
+                {
+                    "event": "complete",
+                    "data": final_result,
+                }
+            )
         except Exception as e:
-            logger.error(f"Documents analysis stream error: {e}", exc_info=True)
-            yield f"event: error\ndata: {json.dumps({'message': str(e)}, ensure_ascii=False)}\n\n"
+            logger.error(f"Documents analysis error: {e}", exc_info=True)
+            await event_queue.put(
+                {
+                    "event": "error",
+                    "data": {
+                        "message": str(e),
+                    },
+                }
+            )
 
     return StreamingResponse(
-        generate(),
+        stream_with_queue(run_analysis, event_queue),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -235,25 +142,14 @@ async def api_doc_analyze_stream(
 async def api_clarify_doc(
     request: ClarifyDocRequest,
     agent: Agent = Depends(get_agent),
-    app_state: AppStateManager = Depends(get_app_state),
 ):
-    result = await agent.clarify(
-        ai_answer=request.ai_answer,
-        user_message=request.user_message,
-        model=request.model,
-    )
-
-    await app_state.add_token_usage(result["token_usage"])
-    total_token_usage = await app_state.get_token_usage()
-    logger.info(f"Total token usage: {total_token_usage}")
-
-    return ClarifyDocResponse(
-        result=ResultData(answer=result["answer"]),
-        elapsed=result["elapsed"],
-        token_usage=result["token_usage"],
-        total_token_usage=total_token_usage,
-        cost_rub=result["cost_rub"],
-    )
+    async def call_agent():
+        return await agent.clarify(
+            ai_answer=request.ai_answer,
+            user_message=request.user_message,
+            model=request.model,
+        )
+    return await build_clarify_chat_result(call_agent, ClarifyDocResponse)
 
 
 @router.post(
@@ -262,21 +158,10 @@ async def api_clarify_doc(
 async def api_chat(
     request: ChatDocRequest,
     agent: Agent = Depends(get_agent),
-    app_state: AppStateManager = Depends(get_app_state),
 ):
-    result = await agent.chat(user_message=request.user_message, model=request.model)
-
-    await app_state.add_token_usage(result["token_usage"])
-    total_token_usage = await app_state.get_token_usage()
-    logger.info(f"Total token usage: {total_token_usage}")
-
-    return ChatDocResponse(
-        result=ResultData(answer=result["answer"]),
-        elapsed=result["elapsed"],
-        token_usage=result["token_usage"],
-        total_token_usage=total_token_usage,
-        cost_rub=result["cost_rub"],
-    )
+    async def call_agent():
+        return await agent.chat(user_message=request.user_message, model=request.model)
+    return await build_clarify_chat_result(call_agent, ChatDocResponse)
 
 
 @router.post("/doc/chat/stream")
@@ -315,5 +200,4 @@ async def api_chat_stream(
 
 @router.post("/doc/history", response_model=HistoryResponse)
 async def api_doc_history(agent: Agent = Depends(get_agent)):
-    result = await agent.get_history()
-    return HistoryResponse(history=result)
+    return HistoryResponse(history=await agent.get_history())
