@@ -5,8 +5,8 @@ import re
 from agent_enums import Role, Assignment
 
 from agent.agent import Agent
-from agent.models.agent_analysis_data import AgentAnalysisData
 from agent.models.judgement_data import JudgementData
+from agent.runners.council_agent_runner import run_agent
 from api.models.analisys.answer_seq import AnswerSeq
 from llm.tokens.token_usage import create_token_usage
 
@@ -24,35 +24,6 @@ async def judge_result(
     judges_token_usage = create_token_usage()
     judges_elapsed = 0
 
-    async def run_judge(judge: Agent, answer: str, seq_index: int) -> AgentAnalysisData:
-        if progress_callback:
-            await progress_callback(
-                "agent_start",
-                {
-                    "agentId": judge.agent_id,
-                    "agentType": "judge",
-                },
-            )
-        logger.info(
-            f"Agent {judge.agent_id} (judge): judgement for document {seq_index} is starting..."
-        )
-        try:
-            return await judge.analyze_doc(
-                resources=[answer], role=role, assignment=Assignment.JUDGE
-            )
-        finally:
-            logger.info(
-                f"Agent {judge.agent_id} (judge): judgement for document {seq_index} is completed"
-            )
-            if progress_callback:
-                await progress_callback(
-                    "agent_end",
-                    {
-                        "agentId": judge.agent_id,
-                        "agentType": "judge",
-                    },
-                )
-
     for seq_index, seq in enumerate(answer_seqs, start=1):
         answer_score = 0
         failed_scores = 0
@@ -60,7 +31,14 @@ async def judge_result(
 
         last_answer = seq.answers[-1].answer
         results = await asyncio.gather(
-            *[run_judge(judge, last_answer, seq_index) for judge in judges],
+            *[run_agent(
+                agent=judge,
+                role=role,
+                assignment=Assignment.JUDGE,
+                resources=[last_answer],
+                progress_callback=progress_callback,
+                doc_index=seq_index,
+            ) for judge in judges],
         )
 
         answer_judgements = [r.answer_item.answer for r in results]

@@ -1,10 +1,14 @@
 from itertools import zip_longest
 
+from agent_enums import Assignment
+
 from agent.agent import Agent
 from agent.council.council import Council
+from agent.messages_data.progress_data import start_event, stop_event
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
+from api.models.analisys.answer_seq import AnswerSeq
 from api.models.analisys.result_data import ResultData
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
@@ -30,13 +34,7 @@ async def _agent_doc_analysis(
     progress_callback,
 ) -> AnalyzeDocResponse:
     if progress_callback:
-        await progress_callback(
-            "agent_start",
-            {
-                "agentId": 1,
-                "agentType": "exec",
-            },
-        )
+        await progress_callback(start_event(1, Assignment.EXEC))
 
     try:
         result = await agent.analyze_doc(
@@ -51,8 +49,12 @@ async def _agent_doc_analysis(
         return AnalyzeDocResponse(
             result=[
                 ResultData(
-                    answer_seq=result.answer_seq.model_dump(),
-                )
+                    answer_seq=AnswerSeq(
+                        answers=[
+                            result.answer_item.model_dump(),
+                        ]
+                    ),
+                ),
             ],
             token_usage=result.token_usage.model_dump() if result.token_usage else None,
             total_token_usage=total_token_usage.model_dump(),
@@ -62,13 +64,7 @@ async def _agent_doc_analysis(
 
     finally:
         if progress_callback:
-            await progress_callback(
-                "agent_end",
-                {
-                    "agentId": 1,
-                    "agentType": "exec",
-                },
-            )
+            await progress_callback(stop_event(1, Assignment.EXEC))
 
 
 async def _council_doc_analysis(

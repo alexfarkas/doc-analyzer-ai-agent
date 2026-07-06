@@ -4,8 +4,8 @@ import logging
 from agent_enums import Role, Assignment
 
 from agent.agent import Agent
-from agent.models.agent_analysis_data import AgentAnalysisData
 from agent.models.correction_data import CorrectionData
+from agent.runners.council_agent_queue_runner import run_agent_queue
 from api.models.analisys.answer_seq import AnswerSeq
 from llm.tokens.token_usage import create_token_usage
 
@@ -37,77 +37,23 @@ async def correct_result(
         await input_queue.put((idx, current_item.answer, seq))
     await input_queue.put(None)
 
-    async def run_corrector(
-        corrector: Agent,
-        in_q: asyncio.Queue,
-        out_q: asyncio.Queue,
-        is_last: bool,
-    ):
-        nonlocal correctors_token_usage, correctors_elapsed
-
-        if progress_callback:
-            await progress_callback(
-                "agent_start",
-                {
-                    "agentId": corrector.agent_id,
-                    "agentType": "corrector",
-                },
-            )
-
-        try:
-            while True:
-                item = await in_q.get()
-
-                if item is None:
-                    if not is_last:
-                        await out_q.put(None)
-                    break
-
-                idx, answer, seq = item
-                logger.info(
-                    f"Agent {corrector.agent_id} (corrector): correction of document {idx + 1} is starting..."
-                )
-                result = await _correct_answer(corrector, answer, role)
-
-                new_answer_item = result.answer_item
-                new_answer_item.author = "corrector"
-                new_answer_item.status = "pre_correct"
-                new_answer_item.init_status = "pre_correct"
-
-                logger.info(
-                    f"Agent {corrector.agent_id} (corrector): correction of document {idx + 1} is completed"
-                )
-
-                async with elapsed_lock:
-                    correctors_token_usage.add_usage(result.token_usage)
-                    correctors_elapsed += result.elapsed
-
-                seq.answers.append(new_answer_item)
-                await out_q.put((idx, new_answer_item.answer, seq))
-
-        except Exception as e:
-            logger.error(f"Agent {corrector.agent_id} (corrector) error: {e}", exc_info=True)
-            if not is_last:
-                try:
-                    await out_q.put(None)
-                except Exception as e:
-                    pass
-            raise
-        finally:
-            if progress_callback:
-                await progress_callback(
-                    "agent_end",
-                    {
-                        "agentId": corrector.agent_id,
-                        "agentType": "corrector",
-                    },
-                )
-
     tasks = []
     for i, corrector in enumerate(correctors):
         is_last = i == len(correctors) - 1
         task = asyncio.create_task(
-            run_corrector(corrector, queues[i], queues[i + 1], is_last)
+            run_agent_queue(
+                agent=corrector,
+                role=role,
+                assignment=Assignment.CORRECTOR,
+                answer_status="pre_correct",
+                in_q=queues[i],
+                out_q=queues[i + 1],
+                is_last=is_last,
+                elapsed_lock=elapsed_lock,
+                token_usage=correctors_token_usage,
+                elapsed=correctors_elapsed,
+                progress_callback=progress_callback,
+            )
         )
         tasks.append(task)
 
@@ -123,10 +69,4 @@ async def correct_result(
         answer_seqs=answer_seqs,
         token_usage=correctors_token_usage,
         elapsed=correctors_elapsed,
-    )
-
-
-async def _correct_answer(corrector: Agent, answer: str, role: Role) -> AgentAnalysisData:
-    return await corrector.analyze_doc(
-        resources=[answer], role=role, assignment=Assignment.CORRECTOR
     )

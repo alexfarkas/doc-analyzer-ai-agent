@@ -101,7 +101,8 @@ async def api_doc_analyze_stream(
 ):
     event_queue = asyncio.Queue()
 
-    async def progress_callback(event_type: str, data: dict):
+    async def progress_callback(event: tuple[str, dict]):
+        event_type, data = event
         await event_queue.put(
             {
                 "event": event_type,

@@ -10,7 +10,8 @@ from agent.agent import Agent
 from agent.council.corrector import correct_result
 from agent.council.judge import judge_result
 from agent.models.council_analysis_data import CouncilAnalysisData
-from agent.runners.council_agents_runner import run_agent, run_stage
+from agent.runners.council_agent_runner import run_agent
+from agent.runners.stage_runner import run_stage
 from api.models.analisys.agent_data import AgentData
 from api.models.analisys.answer_seq import AnswerSeq
 from config.llm_config import llm_config
@@ -102,6 +103,7 @@ class Council:
                 *[run_agent(
                     agent=agent,
                     role=role,
+                    assignment=Assignment.EXEC,
                     resources=resources,
                     progress_callback=progress_callback,
                 ) for agent in self.agents],
