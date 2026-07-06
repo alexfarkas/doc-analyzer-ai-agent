@@ -5,7 +5,7 @@ import tiktoken
 from langchain_core.messages import BaseMessage
 
 from config.llm_config import LLMConfig
-from llm.token_usage import TokenUsage, create_token_usage
+from llm.tokens.token_usage import TokenUsage, create_token_usage
 
 logger = logging.getLogger(__name__)
 

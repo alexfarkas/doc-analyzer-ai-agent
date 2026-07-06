@@ -10,22 +10,22 @@ from langgraph.graph import StateGraph, add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from rag_client import ChromaDBClientFactory
 
-from agent.conversation_storage import ConversationHistory
-from agent.prompts_storage import get_prompts
-from agent.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
+from agent.context.conversation_storage import ConversationHistory
+from agent.context.prompts_storage import get_prompts
+from agent.context.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
 from api.models.analisys.answer_item import AnswerItem
 from api.models.analisys.answer_seq import AnswerSeq
-from api.utils.total_token_usage_utils import update_and_get_total_token_usage
+from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 from config.llm_config import LLMConfig
 from config.provider_config import provider_config
 from llm.llm_factory import LLMFactory
-from llm.token_counter import (
+from llm.tokens.token_counter import (
     calculate_token_usage,
     calculate_cost,
     calculate_tokens_usage,
     calculate_stream_tokens_usage,
 )
-from llm.token_usage import TokenUsage, create_token_usage
+from llm.tokens.token_usage import TokenUsage, create_token_usage
 from tools.tools import init_tools
 
 logger = logging.getLogger(__name__)

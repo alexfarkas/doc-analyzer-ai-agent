@@ -18,10 +18,10 @@ from api.models.analisys.clarify_doc_request import ClarifyDocRequest
 from api.models.analisys.clarify_doc_response import ClarifyDocResponse
 from api.models.analisys.history_response import HistoryResponse
 from api.models.analisys.result_data import ResultData
-from api.utils.doc_analyze_runner import run_doc_analysis
+from agent.runner.doc_analyze_runner import run_doc_analysis
 from api.utils.response_buiilder import build_clarify_chat_result
 from api.utils.sse_utils import stream_with_queue
-from api.utils.total_token_usage_utils import update_and_get_total_token_usage
+from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
 logger = logging.getLogger(__name__)
 

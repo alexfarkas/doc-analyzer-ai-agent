@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from llm.token_usage import TokenUsage
+from llm.tokens.token_usage import TokenUsage
 
 
 class TotalTokensResponse(BaseModel):

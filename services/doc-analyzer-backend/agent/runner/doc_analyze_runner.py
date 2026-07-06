@@ -3,7 +3,7 @@ from agent.council.council import Council
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.utils.response_buiilder import build_agent_analyze_result, build_council_analyze_result
-from api.utils.total_token_usage_utils import update_and_get_total_token_usage
+from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
 
 async def run_doc_analysis(

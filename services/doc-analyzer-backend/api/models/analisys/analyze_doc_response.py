@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from api.models.analisys.result_data import ResultData
-from llm.token_usage import TokenUsage
+from llm.tokens.token_usage import TokenUsage
 
 
 class AnalyzeDocResponse(BaseModel):

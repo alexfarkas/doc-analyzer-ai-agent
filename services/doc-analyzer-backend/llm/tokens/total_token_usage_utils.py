@@ -1,7 +1,7 @@
 import logging
 
 from data.app_state_manager import app_state
-from llm.token_usage import TokenUsage
+from llm.tokens.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from agent_enums import Role, Assignment
 
 from agent.agent import Agent
 from api.models.analisys.answer_seq import AnswerSeq
-from llm.token_usage import create_token_usage
+from llm.tokens.token_usage import create_token_usage
 
 logger = logging.getLogger(__name__)
 

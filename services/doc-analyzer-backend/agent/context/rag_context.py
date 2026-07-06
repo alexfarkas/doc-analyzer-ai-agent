@@ -3,7 +3,7 @@ import logging
 from langchain_core.messages import HumanMessage
 from rag_client import ChromaDBClientFactory
 
-from agent.conversation_storage import ConversationHistory
+from agent.context.conversation_storage import ConversationHistory
 
 logger = logging.getLogger(__name__)
 

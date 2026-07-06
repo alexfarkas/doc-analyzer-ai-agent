@@ -1,7 +1,7 @@
 import asyncio
 
 from data.app_data import AppData
-from llm.token_usage import TokenUsage, create_token_usage
+from llm.tokens.token_usage import TokenUsage, create_token_usage
 
 
 class AppStateManager:

@@ -3,8 +3,8 @@ from typing import Callable, Awaitable
 
 from api.models.analisys.answer_seq import AnswerSeq
 from api.models.analisys.result_data import ResultData
-from api.utils.total_token_usage_utils import update_and_get_total_token_usage
-from llm.token_usage import TokenUsage
+from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
+from llm.tokens.token_usage import TokenUsage
 
 
 def build_agent_analyze_result(
