@@ -4,7 +4,6 @@ from typing import Callable, Awaitable, Any
 from agent_enums import Role
 
 from agent.agent import Agent
-from agent.council import council
 from agent.models.agent_analysis_data import AgentAnalysisData
 from llm.tokens.token_usage import TokenUsage
 

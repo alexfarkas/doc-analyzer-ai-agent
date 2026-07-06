@@ -12,6 +12,7 @@ from agent.council.judge import judge_result
 from agent.models.council_analysis_data import CouncilAnalysisData
 from agent.runners.council_agents_runner import run_agent, run_stage
 from api.models.analisys.agent_data import AgentData
+from api.models.analisys.answer_seq import AnswerSeq
 from config.llm_config import llm_config
 from llm.tokens.token_usage import TokenUsage, create_token_usage
 
@@ -115,7 +116,13 @@ class Council:
         total_elapsed = 0
 
         for r in results:
-            answer_seqs.append(r.answer_seq)
+            answer_seqs.append(
+                AnswerSeq(
+                    answers=[
+                        r.answer_item
+                    ]
+                )
+            )
             exec_token_usage.add_usage(r.token_usage)
             total_elapsed += r.elapsed
 

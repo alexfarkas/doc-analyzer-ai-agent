@@ -63,10 +63,10 @@ async def judge_result(
             *[run_judge(judge, last_answer, seq_index) for judge in judges],
         )
 
-        answer_judgements = [r.answer_seq.answers[0].answer for r in results]
+        answer_judgements = [r.answer_item.answer for r in results]
 
         for result in results:
-            answer = result.answer_seq.answers[0].answer
+            answer = result.answer_item.answer
             parsed_score = re.search(
                 r"(?i)Оценка\s*:?\s*[\[\(]?\s*(\d+)\s*[\]\)]?", answer
             )

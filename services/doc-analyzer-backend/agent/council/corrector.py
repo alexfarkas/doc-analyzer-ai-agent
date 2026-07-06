@@ -69,9 +69,7 @@ async def correct_result(
                 )
                 result = await _correct_answer(corrector, answer, role)
 
-                new_answer_seq = result.answer_seq
-
-                new_answer_item = new_answer_seq.answers[0]
+                new_answer_item = result.answer_item
                 new_answer_item.author = "corrector"
                 new_answer_item.status = "pre_correct"
                 new_answer_item.init_status = "pre_correct"
