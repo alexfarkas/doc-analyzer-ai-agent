@@ -10,21 +10,24 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     if (!content) return [];
     const arr = Array.isArray(content) ? content : [content];
     return arr.map(item => {
-      if (typeof item === 'string') {
-        return { answer: item, score: undefined, answer_iterations: [] };
+      if (item.answer_seq && Array.isArray(item.answer_seq.answers)) {
+        const answers = item.answer_seq.answers
+          .filter(a => a && typeof a === 'object' && typeof a.answer === 'string')
+          .map(a => ({
+            answer: a.answer,
+            author: a.author || '',
+            status: a.status || '',
+            init_status: a.init_status || '',
+          }));
+        return {
+          answer_seq: { answers },
+          score: typeof item.score === 'number' ? item.score : undefined,
+        };
       }
 
-      const rawIterations = item.answer_iterations;
-      const iterations = Array.isArray(rawIterations)
-        ? rawIterations
-            .filter(iter => iter && typeof iter === 'object' && typeof iter.answer === 'string')
-            .map(iter => ({ answer: iter.answer }))
-        : [];
-
       return {
-        answer: typeof item.answer === 'string' ? item.answer : '',
+        answer_seq: { answers: [] },
         score: typeof item.score === 'number' ? item.score : undefined,
-        answer_iterations: iterations,
       };
     });
   }, [content]);
@@ -35,22 +38,38 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     setCompareState(null);
   }, [activeTab, content]);
 
+  const getAnswers = (tabIndex) => {
+    return parsedContent[tabIndex]?.answer_seq?.answers || [];
+  };
+
   const getSelectedIteration = (tabIndex) => {
-    const item = parsedContent[tabIndex];
-    if (!item) return 0;
-    return iterationSelections[tabIndex] ?? item.answer_iterations.length;
+    const answers = getAnswers(tabIndex);
+    if (answers.length === 0) return 0;
+    return iterationSelections[tabIndex] ?? (answers.length - 1);
   };
 
   const getDisplayText = (tabIndex, iterationIndex) => {
-    const item = parsedContent[tabIndex];
+    const answers = getAnswers(tabIndex);
+    if (answers.length === 0) return '';
+    if (iterationIndex !== undefined && iterationIndex < answers.length) {
+      return answers[iterationIndex]?.answer ?? '';
+    }
+    return answers[answers.length - 1]?.answer ?? '';
+  };
+
+  const getIterationLabel = (tabIndex, iterationIndex) => {
+    const answers = getAnswers(tabIndex);
+    const item = answers[iterationIndex];
     if (!item) return '';
 
-    const iterations = item.answer_iterations;
-
-    if (iterationIndex !== undefined && iterationIndex < iterations.length) {
-      return iterations[iterationIndex]?.answer ?? '';
+    if (item.status === 'final') {
+      return item.author
+        ? `✨ Финальный результат (${item.author})`
+        : '✨ Финальный результат';
     }
-    return item.answer ?? '';
+
+    const authorLabel = item.author || 'Промежуточный';
+    return `📝 ${authorLabel}: ${iterationIndex + 1} из ${answers.length}`;
   };
 
   if (isLoading) {
@@ -70,7 +89,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     );
   }
 
-  // 🔹 НОВОЕ: форматирование дробного score
   const formatScore = (score) => {
     if (score == null) return '';
     if (Number.isInteger(score)) return score.toString();
@@ -153,9 +171,9 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
 
   const showTabs = parsedContent.length > 1;
 
-  const currentIterations = parsedContent[safeActiveTab]?.answer_iterations || [];
-  const hasIterations = currentIterations.length > 0;
-  const totalButtons = currentIterations.length + 1;
+  const answers = getAnswers(safeActiveTab);
+  const totalButtons = answers.length;
+  const hasIterations = totalButtons > 1;
 
   const handleIterationSelect = (iterationIndex, side = 'left') => {
     if (compareState) {
@@ -179,9 +197,18 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
       }));
       setCompareState(null);
     } else {
+      const currentAnswers = getAnswers(safeActiveTab);
+      let finalIndex = currentAnswers.length - 1;
+      for (let i = currentAnswers.length - 1; i >= 0; i--) {
+        if (currentAnswers[i].status === 'final') {
+          finalIndex = i;
+          break;
+        }
+      }
+
       setCompareState({
         leftIteration: getSelectedIteration(safeActiveTab),
-        rightIteration: totalButtons - 1,
+        rightIteration: finalIndex,
       });
     }
   };
@@ -190,8 +217,8 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     return (
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
-          {Array.from({ length: totalButtons }, (_, i) => {
-            const isFinal = i === totalButtons - 1;
+          {answers.map((answerItem, i) => {
+            const isFinal = answerItem.status === 'final';
             const isThisSelected = iterationIndex === i;
 
             return (
@@ -205,10 +232,10 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
                   ${isThisSelected
                     ? isFinal
                       ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-amber-500 text-white shadow-sm'
+                      : 'bg-yellow-500 text-white shadow-sm'
                     : isFinal
                       ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'
-                      : 'bg-white text-amber-600 border border-amber-200 hover:bg-amber-50'
+                      : 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50'
                   }
                 `}
               >
@@ -218,10 +245,7 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
           })}
 
           <span className="ml-3 text-xs text-gray-500 whitespace-nowrap">
-            {iterationIndex === totalButtons - 1
-              ? '✨ Финальный результат'
-              : `📝 Промежуточный результат ${iterationIndex + 1} из ${currentIterations.length}`
-            }
+            {getIterationLabel(safeActiveTab, iterationIndex)}
           </span>
         </div>
 
@@ -234,7 +258,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
 
   return (
     <div className="h-full flex flex-col">
-      {/* Вкладки */}
       {showTabs && (
         <div className="flex items-center gap-1 px-2 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto" style={{ minHeight: '40px' }}>
           {parsedContent.map((item, index) => (
@@ -256,7 +279,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
-      {/* 🔹 Панель с оценкой для одного документа (когда нет вкладок) */}
       {!showTabs && parsedContent[safeActiveTab]?.score != null && (
         <div className="flex items-center px-2 py-2 border-b border-gray-200 bg-gray-50" style={{ minHeight: '40px' }}>
           <span className="px-3 py-1.5 text-sm font-medium text-indigo-700 whitespace-nowrap">
@@ -265,13 +287,12 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
-      {/* Панель итераций + кнопка "Сравнить" */}
       {hasIterations && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
           {!compareState && (
             <>
-              {Array.from({ length: totalButtons }, (_, i) => {
-                const isFinal = i === totalButtons - 1;
+              {answers.map((answerItem, i) => {
+                const isFinal = answerItem.status === 'final';
                 const isSelected = getSelectedIteration(safeActiveTab) === i;
 
                 return (
@@ -285,10 +306,10 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
                       ${isSelected
                         ? isFinal
                           ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-yellow-500 text-white shadow-sm'
                         : isFinal
                           ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'
-                          : 'bg-white text-amber-600 border border-amber-200 hover:bg-amber-50'
+                          : 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50'
                       }
                     `}
                   >
@@ -298,10 +319,7 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
               })}
 
               <span className="ml-3 text-xs text-gray-500 whitespace-nowrap">
-                {getSelectedIteration(safeActiveTab) === totalButtons - 1
-                  ? '✨ Финальный результат'
-                  : `📝 Промежуточный результат ${getSelectedIteration(safeActiveTab) + 1} из ${currentIterations.length}`
-                }
+                {getIterationLabel(safeActiveTab, getSelectedIteration(safeActiveTab))}
               </span>
             </>
           )}
@@ -323,7 +341,6 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         </div>
       )}
 
-      {/* Контент */}
       <div className="flex-1 overflow-hidden flex">
         {compareState ? (
           <>

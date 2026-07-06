@@ -1,8 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-// 🔹 Утилита для стриминга чата через SSE
-// 🔹 ИЗМЕНЕНО: onUsage теперь вызывается с двумя аргументами: (usage, totalUsage)
 const streamChatResponse = async (
   userMessage,
   agentIndex,
@@ -56,7 +54,6 @@ const streamChatResponse = async (
             const data = JSON.parse(dataStr);
 
             if (data.type === 'usage') {
-              // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
               onUsage?.(
                 {
                   input_tokens: data.input_tokens,
@@ -66,7 +63,6 @@ const streamChatResponse = async (
                 data.total_token_usage
               );
             } else if (data.token_usage) {
-              // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
               onUsage?.(
                 {
                   input_tokens: data.token_usage.input_tokens,
@@ -110,8 +106,6 @@ export default function JudgementResult({
   const [chatHistories, setChatHistories] = useState({});
   const [isLoading, setIsLoading] = useState({ clarify: false, chat: false });
   const [showScrollButton, setShowScrollButton] = useState(false);
-
-  // 🔹 Состояние выбранной модели для запросов clarify/chat
   const [selectedModel, setSelectedModel] = useState('');
 
   const chatContainerRef = useRef(null);
@@ -123,15 +117,12 @@ export default function JudgementResult({
     return arr[activeTab];
   }, [content, activeTab]);
 
-  // 🔹 Инициализация selectedModel при загрузке доступных моделей
   useEffect(() => {
     if (availableModels.length > 0) {
       setSelectedModel(prev => {
-        // Если текущая модель всё ещё доступна — оставляем её
         if (prev && availableModels.some(m => m.name === prev)) {
           return prev;
         }
-        // Иначе — берём первую доступную
         return availableModels[0].name;
       });
     }
@@ -183,13 +174,16 @@ export default function JudgementResult({
     }
   }, [activeTab]);
 
-  // 🔹 ИЗМЕНЕНО: передаём data.total_token_usage вторым аргументом в onStatsUpdate
   const handleClarifySubmit = useCallback(async () => {
     const userMessage = clarificationInputs[activeTab]?.trim();
     if (!userMessage || !currentAgentData) return;
 
     const targetAgentIndex = activeTab;
-    const targetAiAnswer = currentAgentData.answer || '';
+
+    const currentAnswers = currentAgentData?.answer_seq?.answers || [];
+    const targetAiAnswer = currentAnswers.length > 0
+      ? currentAnswers[currentAnswers.length - 1].answer
+      : '';
 
     setIsLoading(prev => ({ ...prev, clarify: true }));
 
@@ -216,15 +210,27 @@ export default function JudgementResult({
 
       const data = await response.json();
 
-      if (onAnalysisResultUpdate && data.result?.answer != null) {
-        onAnalysisResultUpdate(targetAgentIndex, {
-          answer: data.result.answer,
-          score: data.result.score,
-          judgement: data.result.judgement
-        });
+      if (onAnalysisResultUpdate && data.result) {
+        const resultData = Array.isArray(data.result) ? data.result[0] : data.result;
+
+        if (resultData?.answer_seq && Array.isArray(resultData.answer_seq.answers)) {
+          const answers = resultData.answer_seq.answers
+            .filter(a => a && typeof a === 'object' && typeof a.answer === 'string')
+            .map(a => ({
+              answer: a.answer,
+              author: a.author || '',
+              status: a.status || '',
+              init_status: a.init_status || '',
+            }));
+
+          onAnalysisResultUpdate(targetAgentIndex, {
+            answer_seq: { answers },
+            score: resultData.score,
+            judgement: resultData.judgement,
+          });
+        }
       }
 
-      // 🔹 ИЗМЕНЕНО: передаём оба объекта usage
       if (onStatsUpdate) {
         onStatsUpdate(data.token_usage, data.total_token_usage);
       }
@@ -283,7 +289,6 @@ export default function JudgementResult({
       targetAgentIndex,
       agentsPayload,
       selectedModel,
-      // onToken
       (token) => {
         setChatHistories(prev => {
           const history = prev[targetAgentIndex];
@@ -314,7 +319,6 @@ export default function JudgementResult({
           };
         });
       },
-      // onComplete
       () => {
         setChatHistories(prev => {
           const history = prev[targetAgentIndex];
@@ -336,7 +340,6 @@ export default function JudgementResult({
           };
         });
       },
-      // onError
       (err) => {
         console.error('Stream error:', err);
         setChatHistories(prev => {
@@ -360,7 +363,6 @@ export default function JudgementResult({
           };
         });
       },
-      // 🔹 ИЗМЕНЕНО: onUsage принимает два аргумента
       (usage, totalUsage) => {
         if (onStatsUpdate) {
           onStatsUpdate(usage, totalUsage);
@@ -404,7 +406,6 @@ export default function JudgementResult({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      {/* 🔹 Заголовок вкладок + дропдаун модели справа */}
       <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-1">
           {tabs.map((tabName, index) => (
@@ -425,7 +426,6 @@ export default function JudgementResult({
           ))}
         </div>
 
-        {/* 🔹 Дропдаун выбора модели (без подписи, справа) */}
         {availableModels.length > 0 && (
           <select
             value={selectedModel}
@@ -445,7 +445,6 @@ export default function JudgementResult({
       </div>
 
       <div className="p-4">
-        {/* Вкладка "Оценка" */}
         {judgementTab === 0 && (
           <div className="text-gray-900 leading-relaxed text-sm">
             {currentAgentData?.judgement != null ? (
@@ -483,7 +482,6 @@ export default function JudgementResult({
           </div>
         )}
 
-        {/* Вкладка "Уточнение" */}
         {judgementTab === 1 && (
           <div className="space-y-3">
             <textarea
@@ -519,7 +517,6 @@ export default function JudgementResult({
           </div>
         )}
 
-        {/* Вкладка "Чат" */}
         {judgementTab === 2 && (
           <div className="space-y-3">
             <div className="relative">

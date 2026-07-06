@@ -7,7 +7,7 @@ import JudgementResult from './components/JudgementResult';
 
 const STORAGE_KEY = 'doc_analyzer_selection_v3';
 const LIMIT_STORAGE_KEY = 'doc_analyzer_limit';
-const LIMIT_SETTINGS_KEY = 'doc_analyzer_limit_settings';  // 🔹 НОВОЕ
+const LIMIT_SETTINGS_KEY = 'doc_analyzer_limit_settings';
 
 function App() {
   const [rolesConfig, setRolesConfig] = useState([]);
@@ -32,8 +32,6 @@ function App() {
 
   const [judgementKey, setJudgementKey] = useState(0);
   const [agentStatuses, setAgentStatuses] = useState({});
-
-  // 🔹 Состояние модального окна подтверждения обновления
   const [showReloadConfirm, setShowReloadConfirm] = useState(false);
 
   const [limit, setLimit] = useState(() => {
@@ -48,7 +46,6 @@ function App() {
     }
   });
 
-  // 🔹 НОВОЕ: Настройки порогов предупреждений о лимите
   const [limitSettings, setLimitSettings] = useState(() => {
     try {
       const saved = localStorage.getItem(LIMIT_SETTINGS_KEY);
@@ -71,7 +68,6 @@ function App() {
     assignment: availableAssignments[0]?.api_param || 'exec'
   });
 
-  // 🔹 Загрузка конфигурации ролей и настроек лимита
   useEffect(() => {
     fetch('/api/config')
       .then(res => res.json())
@@ -79,7 +75,6 @@ function App() {
         const roles = data.roles || [];
         setRolesConfig(roles);
 
-        // 🔹 НОВОЕ: сохраняем limit_settings из ответа
         if (data.limit_settings) {
           setLimitSettings(data.limit_settings);
         }
@@ -119,7 +114,6 @@ function App() {
       .catch(err => console.error('Failed to fetch /api/config:', err));
   }, []);
 
-  // 🔹 Загрузка суммарных данных о токенах при старте
   useEffect(() => {
     fetch('/api/tokens/total')
       .then(async (res) => {
@@ -174,7 +168,6 @@ function App() {
     }
   }, [limit]);
 
-  // 🔹 НОВОЕ: Синхронизация limitSettings с localStorage
   useEffect(() => {
     try {
       if (limitSettings) {
@@ -187,20 +180,16 @@ function App() {
     }
   }, [limitSettings]);
 
-  // 🔹 Перехват клавиш обновления страницы (F5, Ctrl+R, Cmd+R)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Если нет данных анализа — не перехватываем
       if (analysisResult.length === 0) return;
 
-      // F5
       if (e.key === 'F5') {
         e.preventDefault();
         setShowReloadConfirm(true);
         return;
       }
 
-      // Ctrl+R / Ctrl+Shift+R (Windows/Linux) или Cmd+R / Cmd+Shift+R (Mac)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         setShowReloadConfirm(true);
@@ -212,13 +201,10 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [analysisResult]);
 
-  // 🔹 Защита от закрытия вкладки/окна браузера
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (analysisResult.length > 0) {
         e.preventDefault();
-        // Современные браузеры игнорируют кастомный текст,
-        // но возврат строки всё равно вызывает стандартное окно подтверждения
         e.returnValue = 'Вы уверены, что хотите обновить страницу? Данные анализа документов будут утеряны.';
         return e.returnValue;
       }
@@ -228,7 +214,6 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [analysisResult]);
 
-  // 🔹 Обработчики модального окна подтверждения обновления
   const handleConfirmReload = useCallback(() => {
     window.location.reload();
   }, []);
@@ -302,14 +287,12 @@ function App() {
     setStats(prev => {
       const updated = { ...prev };
 
-      // Потрачено токенов (token_usage)
       if (usage) {
         updated.totalTokens = usage.total_tokens;
         updated.inputTokens = usage.input_tokens;
         updated.outputTokens = usage.output_tokens;
       }
 
-      // Всего токенов (total_token_usage)
       if (totalUsage) {
         updated.totalTokensAll = totalUsage.total_tokens;
         updated.inputTokensAll = totalUsage.input_tokens;
@@ -459,21 +442,26 @@ function App() {
                   const resultArray = Array.isArray(data.result) ? data.result : [data.result];
 
                   const normalizedResult = resultArray.map(item => {
-                    if (typeof item === 'string') {
+                    if (item.answer_seq && Array.isArray(item.answer_seq.answers)) {
+                      const answers = item.answer_seq.answers
+                        .filter(a => a && typeof a === 'object' && typeof a.answer === 'string')
+                        .map(a => ({
+                          answer: a.answer,
+                          author: a.author || '',
+                          status: a.status || '',
+                          init_status: a.init_status || '',
+                        }));
                       return {
-                        answer: item,
-                        score: undefined,
-                        judgement: undefined,
-                        answer_iterations: [],
+                        answer_seq: { answers },
+                        score: item.score,
+                        judgement: item.judgement,
                       };
                     }
+
                     return {
-                      answer: item.answer ?? '',
+                      answer_seq: { answers: [] },
                       score: item.score,
                       judgement: item.judgement,
-                      answer_iterations: Array.isArray(item.answer_iterations)
-                        ? item.answer_iterations
-                        : [],
                     };
                   });
 
@@ -607,7 +595,6 @@ function App() {
         />
       </main>
 
-      {/* 🔹 Модальное окно подтверждения обновления страницы */}
       {showReloadConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white border border-gray-200 rounded-lg shadow-2xl p-5 max-w-md mx-4">
