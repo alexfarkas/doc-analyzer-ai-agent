@@ -77,5 +77,5 @@ backend_config = ConfigResponse(
             ],
             max_agents=10,
         ),
-    ]
+    ],
 )

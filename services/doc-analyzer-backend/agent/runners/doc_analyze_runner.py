@@ -1,8 +1,11 @@
+from itertools import zip_longest
+
 from agent.agent import Agent
 from agent.council.council import Council
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
-from api.utils.response_buiilder import build_agent_analyze_result, build_council_analyze_result
+from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
+from api.models.analisys.result_data import ResultData
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
 
@@ -11,7 +14,7 @@ async def run_doc_analysis(
     agent: Agent,
     council: Council,
     progress_callback=None,
-) -> dict:
+) -> AnalyzeDocResponse:
     if len(request.agents) == 0:
         raise AgentsListIsEmptyError()
 
@@ -25,7 +28,7 @@ async def _agent_doc_analysis(
     request: AnalyzeDocRequest,
     agent: Agent,
     progress_callback,
-) -> dict:
+) -> AnalyzeDocResponse:
     if progress_callback:
         await progress_callback(
             "agent_start",
@@ -43,14 +46,19 @@ async def _agent_doc_analysis(
             limit=request.limit,
         )
 
-        total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+        total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
-        return build_agent_analyze_result(
-            answer_seq=result["answer_seq"],
-            elapsed=result["elapsed"],
-            token_usage=result["token_usage"],
-            total_token_usage=total_token_usage,
-        )
+        return AnalyzeDocResponse(
+            result=[
+                ResultData(
+                    answer_seq=result.answer_seq.model_dump(),
+                )
+            ],
+            token_usage=result.token_usage.model_dump() if result.token_usage else None,
+            total_token_usage=total_token_usage.model_dump(),
+            elapsed=result.elapsed,
+            cost_rub=0,
+        ).model_dump()
 
     finally:
         if progress_callback:
@@ -67,7 +75,7 @@ async def _council_doc_analysis(
     request: AnalyzeDocRequest,
     council: Council,
     progress_callback,
-) -> dict:
+) -> AnalyzeDocResponse:
     await council.create_council(request.agents)
 
     result = await council.analyze_doc(
@@ -77,13 +85,24 @@ async def _council_doc_analysis(
         progress_callback=progress_callback,
     )
 
-    total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+    total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
-    return build_council_analyze_result(
-        answer_seqs=result["answer_seqs"],
-        judgements=result["judgements"],
-        scores=result["scores"],
-        elapsed=result["elapsed"],
-        token_usage=result["token_usage"],
-        total_token_usage=total_token_usage,
-    )
+    return AnalyzeDocResponse(
+        result=[
+            ResultData(
+                answer_seq=answer_seq.model_dump(),
+                judgement=judgement,
+                score=score,
+            )
+            for answer_seq, judgement, score in zip_longest(
+                result.answer_seqs,
+                result.judgements,
+                result.scores,
+                fillvalue=None,
+            )
+        ],
+        token_usage=result.token_usage.model_dump() if result.token_usage else None,
+        total_token_usage=total_token_usage.model_dump(),
+        elapsed=result.elapsed,
+        cost_rub=0,
+    ).model_dump()

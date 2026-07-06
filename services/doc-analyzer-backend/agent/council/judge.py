@@ -5,6 +5,8 @@ import re
 from agent_enums import Role, Assignment
 
 from agent.agent import Agent
+from agent.models.agent_analysis_data import AgentAnalysisData
+from agent.models.judgement_data import JudgementData
 from api.models.analisys.answer_seq import AnswerSeq
 from llm.tokens.token_usage import create_token_usage
 
@@ -16,13 +18,13 @@ async def judge_result(
     answer_seqs: list[AnswerSeq],
     role: Role,
     progress_callback=None,
-) -> dict:
+) -> JudgementData:
     judgements = []
     scores = []
     judges_token_usage = create_token_usage()
     judges_elapsed = 0
 
-    async def run_judge(judge: Agent, answer: str) -> dict:
+    async def run_judge(judge: Agent, answer: str, seq_index: int) -> AgentAnalysisData:
         if progress_callback:
             await progress_callback(
                 "agent_start",
@@ -58,13 +60,13 @@ async def judge_result(
 
         last_answer = seq.answers[-1].answer
         results = await asyncio.gather(
-            *[run_judge(judge, last_answer) for judge in judges],
+            *[run_judge(judge, last_answer, seq_index) for judge in judges],
         )
 
-        answer_judgements = [r["answer_seq"].answers[0].answer for r in results]
+        answer_judgements = [r.answer_seq.answers[0].answer for r in results]
 
         for result in results:
-            answer = result["answer_seq"].answers[0].answer
+            answer = result.answer_seq.answers[0].answer
             parsed_score = re.search(
                 r"(?i)Оценка\s*:?\s*[\[\(]?\s*(\d+)\s*[\]\)]?", answer
             )
@@ -87,8 +89,8 @@ async def judge_result(
                         f"Error receiving score from judge agent answer: {score}"
                     )
 
-            judges_token_usage.add_usage(result["token_usage"])
-            judges_elapsed += result["elapsed"]
+            judges_token_usage.add_usage(result.token_usage)
+            judges_elapsed += result.elapsed
 
         logger.info(f"Judgment for document {seq_index} is completed")
 
@@ -97,15 +99,20 @@ async def judge_result(
         )
         judgements.append(judgements_summary)
 
-        average_answer_score = round(answer_score / (len(judges) - failed_scores), 1)
-        logger.info(
-            f"Average score from {len(judges)} judge agents: {average_answer_score}"
-        )
+        successful_scores = len(judges) - failed_scores
+        if successful_scores > 0:
+            average_answer_score = round(answer_score / successful_scores, 1)
+            logger.info(
+                f"Average score from {len(judges)} judge agents: {average_answer_score}"
+            )
+        else:
+            average_answer_score = None
+            logger.warning(f"All {len(judges)} judges failed to parse score for document {seq_index}")
         scores.append(average_answer_score)
 
-    return {
-        "judgements": judgements,
-        "scores": scores,
-        "judges_token_usage": judges_token_usage,
-        "judges_elapsed": judges_elapsed,
-    }
+    return JudgementData(
+        judgements=judgements,
+        scores=scores,
+        token_usage=judges_token_usage,
+        elapsed=judges_elapsed,
+    )

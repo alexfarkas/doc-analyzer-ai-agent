@@ -15,7 +15,7 @@ router = APIRouter()
 @router.post("/tokens/clear")
 async def api_tokens_clear(app_state: AppStateManager = Depends(get_app_state)):
     await app_state.clear_token_usage()
-    logger.info(f"Total token usage is cleared")
+    logger.info("Total token usage is cleared")
     return ClearTokensResponse(status="success")
 
 

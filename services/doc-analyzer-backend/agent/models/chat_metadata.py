@@ -1,12 +1,10 @@
 from pydantic import BaseModel
 
-from api.models.analisys.result_data import ResultData
 from llm.tokens.token_usage import TokenUsage
 
 
-class AnalyzeDocResponse(BaseModel):
-    result: list[ResultData]
+class ChatMetadata(BaseModel):
     token_usage: TokenUsage | None
     total_token_usage: TokenUsage | None
     elapsed: float
-    cost_rub: float
+    cost_rub: float = 0

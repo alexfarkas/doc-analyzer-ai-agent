@@ -4,6 +4,8 @@ import logging
 from agent_enums import Role, Assignment
 
 from agent.agent import Agent
+from agent.models.agent_analysis_data import AgentAnalysisData
+from agent.models.correction_data import CorrectionData
 from api.models.analisys.answer_seq import AnswerSeq
 from llm.tokens.token_usage import create_token_usage
 
@@ -15,7 +17,7 @@ async def correct_result(
     answer_seqs: list[AnswerSeq],
     role: Role,
     progress_callback=None,
-) -> dict:
+) -> CorrectionData:
     correctors_token_usage = create_token_usage()
     correctors_elapsed = 0
     elapsed_lock = asyncio.Lock()
@@ -67,7 +69,7 @@ async def correct_result(
                 )
                 result = await _correct_answer(corrector, answer, role)
 
-                new_answer_seq = result["new_answer_seq"]
+                new_answer_seq = result.answer_seq
 
                 new_answer_item = new_answer_seq.answers[0]
                 new_answer_item.author = "corrector"
@@ -79,16 +81,19 @@ async def correct_result(
                 )
 
                 async with elapsed_lock:
-                    correctors_token_usage.add_usage(result["token_usage"])
-                    correctors_elapsed += result["elapsed"]
+                    correctors_token_usage.add_usage(result.token_usage)
+                    correctors_elapsed += result.elapsed
 
                 seq.answers.append(new_answer_item)
                 await out_q.put((idx, new_answer_item.answer, seq))
 
         except Exception as e:
-            logger.error(f"Agent {corrector.agent_id} (corrector) error: {e}")
+            logger.error(f"Agent {corrector.agent_id} (corrector) error: {e}", exc_info=True)
             if not is_last:
-                await out_q.put(None)
+                try:
+                    await out_q.put(None)
+                except Exception as e:
+                    pass
             raise
         finally:
             if progress_callback:
@@ -116,19 +121,14 @@ async def correct_result(
             last_item.status = "final"
             last_item.init_status = "final"
 
-    return {
-        "answer_seqs": answer_seqs,
-        "correctors_token_usage": correctors_token_usage,
-        "correctors_elapsed": correctors_elapsed,
-    }
+    return CorrectionData(
+        answer_seqs=answer_seqs,
+        token_usage=correctors_token_usage,
+        elapsed=correctors_elapsed,
+    )
 
 
-async def _correct_answer(corrector: Agent, answer: str, role: Role) -> dict:
-    result = await corrector.analyze_doc(
+async def _correct_answer(corrector: Agent, answer: str, role: Role) -> AgentAnalysisData:
+    return await corrector.analyze_doc(
         resources=[answer], role=role, assignment=Assignment.CORRECTOR
     )
-    return {
-        "new_answer_seq": result["answer_seq"],
-        "token_usage": result["token_usage"],
-        "elapsed": result["elapsed"],
-    }

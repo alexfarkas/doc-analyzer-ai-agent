@@ -10,11 +10,12 @@ class TokenUsage(BaseModel):
     def total_tokens(self) -> int:
         return self.input_tokens + self.output_tokens
 
-    def add_usage(self, tokens: TokenUsage):
-        self.add_tokens(
-            added_input_tokens=tokens.input_tokens,
-            added_output_tokens=tokens.output_tokens,
-        )
+    def add_usage(self, tokens: TokenUsage | None):
+        if tokens:
+            self.add_tokens(
+                added_input_tokens=tokens.input_tokens,
+                added_output_tokens=tokens.output_tokens,
+            )
 
     def add_tokens(self, added_input_tokens: int, added_output_tokens: int):
         self.input_tokens += added_input_tokens

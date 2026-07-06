@@ -9,6 +9,8 @@ from rag_client import ChromaDBClientFactory
 from agent.agent import Agent
 from agent.council.corrector import correct_result
 from agent.council.judge import judge_result
+from agent.models.council_analysis_data import CouncilAnalysisData
+from agent.runners.council_agents_runner import run_agent, run_stage
 from api.models.analisys.agent_data import AgentData
 from config.llm_config import llm_config
 from llm.tokens.token_usage import TokenUsage, create_token_usage
@@ -57,7 +59,7 @@ class Council:
         self._token_usage = create_token_usage()
 
         for agent_index, agent_data in enumerate(agents_data, start=1):
-            agent = await Agent().create_agent(
+            agent = await Agent.create_agent(
                 llm_config,
                 agent_index,
                 self._prompt_repository,
@@ -85,7 +87,7 @@ class Council:
         role: Role,
         limit: int | None = None,
         progress_callback: ProgressCallback | None = None,
-    ) -> dict:
+    ) -> CouncilAnalysisData:
         logger.info(
             f"Council of {len(self.agents)} agents: doc analysis is starting..."
         )
@@ -94,96 +96,69 @@ class Council:
         else:
             logger.info(f"Tokens limit is not set")
 
-        async def run_agents(agent: Agent) -> dict:
-            if progress_callback:
-                await progress_callback(
-                    "agent_start",
-                    {
-                        "agentId": agent.agent_id,
-                        "agentType": "exec",
-                    },
-                )
-            logger.info(f"Agent {agent.agent_id} (exec): doc analysis is starting...")
-            try:
-                return await agent.analyze_doc(resources=resources, role=role)
-            finally:
-                logger.info(f"Agent {agent.agent_id} (exec): doc analysis is completed")
-                if progress_callback:
-                    await progress_callback(
-                        "agent_end",
-                        {
-                            "agentId": agent.agent_id,
-                            "agentType": "exec",
-                        },
-                    )
-
         results = list(
             await asyncio.gather(
-                *[run_agents(agent) for agent in self.agents],
+                *[run_agent(
+                    agent=agent,
+                    role=role,
+                    resources=resources,
+                    progress_callback=progress_callback,
+                ) for agent in self.agents],
             )
         )
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
 
         answer_seqs = []
         judgements = []
-        scores = []
 
         exec_token_usage = create_token_usage()
         total_elapsed = 0
 
         for r in results:
-            answer_seqs.append(r["answer_seq"])
-            exec_token_usage.add_usage(r["token_usage"])
-            total_elapsed += r["elapsed"]
+            answer_seqs.append(r.answer_seq)
+            exec_token_usage.add_usage(r.token_usage)
+            total_elapsed += r.elapsed
 
         self._token_usage.add_usage(exec_token_usage)
         logger.info(f"Exec token usage: {self._token_usage}")
 
-        if len(self.correctors) > 0:
-            logger.info(f"{len(self.correctors)} correctors: correction is starting...")
-            correctors_result = await correct_result(
-                correctors=self.correctors,
-                answer_seqs=answer_seqs,
-                role=role,
-                progress_callback=progress_callback,
+        if self.correctors:
+            correctors_result, total_elapsed = await run_stage(
+                stage_name=f"{len(self.correctors)} correctors: correction",
+                stage_fn=lambda: correct_result(
+                    correctors=self.correctors,
+                    answer_seqs=answer_seqs,
+                    role=role,
+                    progress_callback=progress_callback,
+                ),
+                council_token_usage=self._token_usage,
+                total_elapsed=total_elapsed,
             )
-            logger.info(f"{len(self.correctors)} correctors:: correction is completed")
 
-            answer_seqs = correctors_result["answer_seqs"]
+            answer_seqs = correctors_result.answer_seqs
 
-            correctors_token_usage = correctors_result["correctors_token_usage"]
-            self._token_usage.add_usage(correctors_token_usage)
-            logger.info(f"Correctors token usage: {correctors_token_usage}")
-            logger.info(f"Overall token usage: {self._token_usage}")
+        if self.judges:
+            judges_result, total_elapsed = await run_stage(
+                stage_name=f"{len(self.correctors)} judges: judgement",
+                stage_fn=lambda: judge_result(
+                    judges=self.judges,
+                    answer_seqs=answer_seqs,
+                    role=role,
+                    progress_callback=progress_callback,
+                ),
+                council_token_usage=self._token_usage,
+                total_elapsed=total_elapsed,
+            )
 
-            total_elapsed += correctors_result["correctors_elapsed"]
-
-        if len(self.judges) == 0:
-            [scores.append(None) for _ in answer_seqs]
+            judgements = judges_result.judgements
+            scores = judges_result.scores
         else:
-            logger.info(f"{len(self.judges)} judges: judgement is starting...")
-            judges_result = await judge_result(
-                judges=self.judges,
-                answer_seqs=answer_seqs,
-                role=role,
-                progress_callback=progress_callback,
-            )
-            logger.info(f"{len(self.judges)} judges:: judgement is completed")
+            scores = [None] * len(answer_seqs)
 
-            judgements = judges_result["judgements"]
-            scores = judges_result["scores"]
-
-            judges_token_usage = judges_result["judges_token_usage"]
-            self._token_usage.add_usage(judges_token_usage)
-            logger.info(f"Judges token usage: {judges_token_usage}")
-            logger.info(f"Overall token usage: {self._token_usage}")
-
-            total_elapsed += judges_result["judges_elapsed"]
-
-        return {
-            "answer_seqs": answer_seqs,
-            "judgements": judgements,
-            "scores": scores,
-            "token_usage": self._token_usage,
-            "elapsed": total_elapsed,
-        }
+        return CouncilAnalysisData(
+            answer_seqs=answer_seqs,
+            judgements=judgements,
+            scores=scores,
+            token_usage=self._token_usage,
+            elapsed=total_elapsed,
+        )

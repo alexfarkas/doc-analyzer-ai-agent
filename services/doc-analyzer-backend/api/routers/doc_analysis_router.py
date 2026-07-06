@@ -18,8 +18,8 @@ from api.models.analisys.clarify_doc_request import ClarifyDocRequest
 from api.models.analisys.clarify_doc_response import ClarifyDocResponse
 from api.models.analisys.history_response import HistoryResponse
 from api.models.analisys.result_data import ResultData
-from agent.runner.doc_analyze_runner import run_doc_analysis
-from api.utils.response_buiilder import build_clarify_chat_result
+from agent.runners.doc_analyze_runner import run_doc_analysis
+from api.utils.api_response_builder import build_clarify_chat_result
 from api.utils.sse_utils import stream_with_queue
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
@@ -41,39 +41,49 @@ async def api_doc_analyze(
 
     if len(request.agents) == 1:
         result = await agent.analyze_doc(
-            resources=request.resources, role=request.role, model=request.agents[0].model
+            resources=request.resources,
+            role=request.role,
+            model=request.agents[0].model,
         )
 
-        total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+        total_token_usage = await update_and_get_total_token_usage(
+            result["token_usage"]
+        )
 
         return AnalyzeDocResponse(
-            result=[ResultData(answer_seq=result["answer_seq"])],
-            elapsed=result["elapsed"],
-            token_usage=result["token_usage"],
+            result=[
+                ResultData(
+                    answer_seq=result.answer_seq
+                )
+            ],
+            elapsed=result.elapsed,
+            token_usage=result.token_usage,
             total_token_usage=total_token_usage,
-            cost_rub=result["cost_rub"],
+            cost_rub=result.cost_rub,
         )
 
     await council.create_council(request.agents)
-    result = await council.analyze_doc(
-        resources=request.resources, role=request.role
-    )
+    result = await council.analyze_doc(resources=request.resources, role=request.role)
 
-    answer_seqs = result["answer_seqs"]
-    judgements = result["judgements"]
-    scores = result["scores"]
+    answer_seqs = result.answer_seqs
+    judgements = result.judgements
+    scores = result.scores
 
-    total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
+    total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
     return AnalyzeDocResponse(
         result=[
-            ResultData(answer_seq=answer_seq, judgement=judgement, score=score)
+            ResultData(
+                answer_seq=answer_seq,
+                judgement=judgement,
+                score=score
+            )
             for answer_seq, judgement, score in zip_longest(
                 answer_seqs, judgements, scores, fillvalue=None
             )
         ],
-        elapsed=result["elapsed"],
-        token_usage=result["token_usage"],
+        elapsed=result.elapsed,
+        token_usage=result.token_usage,
         total_token_usage=total_token_usage,
         cost_rub=0,
     )
@@ -148,6 +158,7 @@ async def api_clarify_doc(
             user_message=request.user_message,
             model=request.model,
         )
+
     return await build_clarify_chat_result(call_agent, ClarifyDocResponse)
 
 
@@ -160,6 +171,7 @@ async def api_chat(
 ):
     async def call_agent():
         return await agent.chat(user_message=request.user_message, model=request.model)
+
     return await build_clarify_chat_result(call_agent, ChatDocResponse)
 
 

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 async def update_and_get_total_token_usage(
-    token_usage: TokenUsage,
+    token_usage: TokenUsage | None,
 ) -> TokenUsage:
     await app_state.add_token_usage(token_usage)
     total_token_usage = await app_state.get_token_usage()

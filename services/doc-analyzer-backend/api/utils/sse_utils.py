@@ -14,7 +14,7 @@ async def stream_with_queue(
     try:
         while True:
             event = await event_queue.get()
-            yield sse_event(event['event'], event['data'])
+            yield sse_event(event["event"], event["data"])
             if event["event"] in ["complete", "error"]:
                 break
     except Exception as e:
@@ -25,10 +25,7 @@ async def stream_with_queue(
 
 
 def sse_event(event_type: str, data: dict) -> str:
-    return (
-        f"event: {event_type}\n"
-        f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
-    )
+    return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def sse_error(message: str) -> str:

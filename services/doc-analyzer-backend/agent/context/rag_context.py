@@ -1,7 +1,7 @@
 import logging
 
 from langchain_core.messages import HumanMessage
-from rag_client import ChromaDBClientFactory
+from rag_client import ChromaDBClientFactory, ChromaDBClient
 
 from agent.context.conversation_storage import ConversationHistory
 
@@ -25,31 +25,15 @@ async def get_prompts_with_rag(
         chromadb_client_factory.create_client(name) for name in rag_collections_names
     ]
 
-    system_prompt, user_prompt = prompts
-
-    rag_query = await _build_rag_query(system_prompt, user_prompt)
-
-    logger.info("Retrieving RAG context...")
-    rag_context_parts = []
-    for client in chromadb_clients:
-        rag_context_parts.append(await client.search(rag_query, formatted=True))
-    rag_context = "".join(rag_context_parts)
-    logger.info("RAG context is retrieved")
+    rag_query = _build_rag_query(prompts)
+    rag_context = await _retrieve_rag_context(rag_query, chromadb_clients)
 
     if rag_context:
-        logger.info("RAG context found")
-        if user_prompt:
-            logger.info("Injecting RAG context to user prompt")
-            user_prompt = await _inject_context_into_prompt(user_prompt, rag_context)
-        elif system_prompt:
-            logger.info("Injecting RAG context to system prompt")
-            system_prompt = await _inject_context_into_prompt(
-                system_prompt, rag_context
-            )
+        prompts = _inject_context_into_prompts(prompts)
     else:
         logger.info("No RAG context found")
 
-    return user_prompt, system_prompt
+    return prompts
 
 
 async def get_user_prompt_with_rag(
@@ -69,22 +53,21 @@ async def get_user_prompt_with_rag(
     chromadb_clients = [
         chromadb_client_factory.create_client(name) for name in rag_collections_names
     ]
-    rag_query = await _build_conversation_rag_query(user_prompt, history)
 
-    logger.info("Retrieving RAG context...")
-    rag_context_parts = []
-    for client in chromadb_clients:
-        rag_context_parts.append(await client.search(rag_query, formatted=True))
-    rag_context = "".join(rag_context_parts)
-    logger.info("RAG context is retrieved")
+    rag_query = _build_conversation_rag_query(user_prompt, history)
+    rag_context = await _retrieve_rag_context(rag_query, chromadb_clients)
 
     if rag_context:
-        return await _inject_context_into_prompt(user_prompt, rag_context)
+        return _inject_context_into_prompt(user_prompt, rag_context)
+    else:
+        logger.info("No RAG context found")
 
     return user_prompt
 
 
-async def _build_rag_query(system_prompt: str | None, user_prompt: str | None) -> str:
+def _build_rag_query(prompts: tuple[str, str]) -> str:
+    system_prompt, user_prompt = prompts
+
     parts = []
     system_prompt_snippet_length = 200
     user_prompt_snippet_length = 300
@@ -110,7 +93,7 @@ async def _build_rag_query(system_prompt: str | None, user_prompt: str | None) -
     return query[:query_length]
 
 
-async def _build_conversation_rag_query(
+def _build_conversation_rag_query(
     new_message: str, history: ConversationHistory
 ) -> str:
     last_messages_count = 2
@@ -130,7 +113,25 @@ async def _build_conversation_rag_query(
     return query.strip()[:query_length]
 
 
-async def _inject_context_into_prompt(prompt: str, context: str) -> str:
+def _inject_context_into_prompts(prompts: tuple[str, str], rag_context: str) -> tuple[str, str]:
+    logger.info("RAG context found")
+
+    system_prompt, user_prompt = prompts
+    if user_prompt:
+        logger.info("Injecting RAG context to user prompt")
+        user_prompt = _inject_context_into_prompt(user_prompt, rag_context)
+    elif system_prompt:
+        logger.info("Injecting RAG context to system prompt")
+        system_prompt = _inject_context_into_prompt(
+            system_prompt, rag_context
+        )
+    logger.debug(f"System prompt with RAG: {system_prompt}")
+    logger.debug(f"User prompt with RAG: {user_prompt}")
+
+    return system_prompt, user_prompt
+
+
+def _inject_context_into_prompt(prompt: str, context: str) -> str:
     if not context:
         return prompt
 
@@ -143,3 +144,12 @@ async def _inject_context_into_prompt(prompt: str, context: str) -> str:
     )
 
     return f"{prompt}{context_block}"
+
+
+async def _retrieve_rag_context(rag_query: str, chromadb_clients: list[ChromaDBClient]) -> str:
+    logger.info("Retrieving RAG context...")
+    rag_context_parts = []
+    for client in chromadb_clients:
+        rag_context_parts.append(await client.search(rag_query, formatted=True))
+    logger.info("RAG context is retrieved")
+    return "".join(rag_context_parts)
