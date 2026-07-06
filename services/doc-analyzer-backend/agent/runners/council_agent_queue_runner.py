@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from agent_enums import Role, Assignment
+from agent_enums import Role, Assignment, AnswerStatus
 
 from agent.agent import Agent
 from agent.messages_data.progress_data import start_event, stop_event
@@ -15,7 +15,7 @@ async def run_agent_queue(
     agent: Agent,
     role: Role,
     assignment: Assignment,
-    answer_status: str,
+    answer_status: AnswerStatus,
     in_q: asyncio.Queue,
     out_q: asyncio.Queue,
     is_last: bool,
@@ -48,7 +48,7 @@ async def run_agent_queue(
             )
 
             new_answer_item = result.answer_item
-            new_answer_item.author = assignment.value
+            new_answer_item.author = assignment
             new_answer_item.status = answer_status
             new_answer_item.init_status = answer_status
 

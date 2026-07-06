@@ -20,7 +20,7 @@ async def run_agent(
     if progress_callback:
         await progress_callback(start_event(agent.agent_id, assignment))
 
-    doc_logging = f" of document{doc_index}" if doc_index else ""
+    doc_logging = f" of document {doc_index}" if doc_index else ""
 
     logger.info(f"Agent {agent.agent_id} ({assignment.value}): processing{doc_logging} is starting...")
     try:

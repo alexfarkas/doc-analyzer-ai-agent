@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from agent_enums import Role, Assignment
+from agent_enums import Role, Assignment, AnswerStatus
 
 from agent.agent import Agent
 from agent.models.correction_data import CorrectionData
@@ -24,8 +24,8 @@ async def correct_result(
 
     for seq in answer_seqs:
         for item in seq.answers:
-            item.status = "pre_correct"
-            item.init_status = "pre_correct"
+            item.status = AnswerStatus.PRE_CORRECT
+            item.init_status = AnswerStatus.PRE_CORRECT
 
     input_queue = asyncio.Queue()
     queues = [input_queue]
@@ -45,7 +45,7 @@ async def correct_result(
                 agent=corrector,
                 role=role,
                 assignment=Assignment.CORRECTOR,
-                answer_status="pre_correct",
+                answer_status=AnswerStatus.PRE_CORRECT,
                 in_q=queues[i],
                 out_q=queues[i + 1],
                 is_last=is_last,
@@ -62,8 +62,8 @@ async def correct_result(
     for seq in answer_seqs:
         if seq.answers:
             last_item = seq.answers[-1]
-            last_item.status = "final"
-            last_item.init_status = "final"
+            last_item.status = AnswerStatus.FINAL
+            last_item.init_status = AnswerStatus.FINAL
 
     return CorrectionData(
         answer_seqs=answer_seqs,
