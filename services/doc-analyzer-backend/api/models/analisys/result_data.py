@@ -1,10 +1,9 @@
 from pydantic import BaseModel
 
-from api.models.analisys.result_iter_data import ResultIterData
+from api.models.analisys.answer_seq import AnswerSeq
 
 
 class ResultData(BaseModel):
-    answer: str
+    answer_seq: AnswerSeq
     score: float | None = None
     judgement: str | None = None
-    answer_iterations: list[ResultIterData] = None

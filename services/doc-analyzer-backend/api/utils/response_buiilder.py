@@ -1,13 +1,14 @@
 from itertools import zip_longest
 from typing import Callable, Awaitable
 
+from api.models.analisys.answer_seq import AnswerSeq
 from api.models.analisys.result_data import ResultData
 from api.utils.total_token_usage_utils import update_and_get_total_token_usage
 from llm.token_usage import TokenUsage
 
 
 def build_agent_analyze_result(
-    answer: str,
+    answer_seq: AnswerSeq,
     elapsed: float,
     token_usage: TokenUsage,
     total_token_usage: TokenUsage,
@@ -15,7 +16,7 @@ def build_agent_analyze_result(
     return {
         "result": [
             {
-                "answer": answer,
+                "answer_seq": answer_seq,
             }
         ],
         "elapsed": elapsed,
@@ -27,10 +28,9 @@ def build_agent_analyze_result(
 
 
 def build_council_analyze_result(
-    answers: list[str],
+    answer_seqs: list[AnswerSeq],
     judgements: list[str],
     scores: list[float],
-    iterations: list[dict],
     elapsed: float,
     token_usage: TokenUsage,
     total_token_usage: TokenUsage,
@@ -38,16 +38,14 @@ def build_council_analyze_result(
     return {
         "result": [
             {
-                "answer": answer,
+                "answer_seq": answer_seq.model_dump(),
                 "judgement": judgement,
                 "score": score,
-                "answer_iterations": answer_iterations,
             }
-            for answer, judgement, score, answer_iterations in zip_longest(
-                answers,
+            for answer_seq, judgement, score in zip_longest(
+                answer_seqs,
                 judgements,
                 scores,
-                iterations,
                 fillvalue=None,
             )
         ],
@@ -66,7 +64,7 @@ async def build_clarify_chat_result(
     result = await agent_call()
     total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
     return response_model(
-        result=ResultData(answer=result["answer"]),
+        result=ResultData(answer_seq=result["answer_seq"]),
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
         total_token_usage=total_token_usage,

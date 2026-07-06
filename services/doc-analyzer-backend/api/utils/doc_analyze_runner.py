@@ -46,7 +46,7 @@ async def _agent_doc_analysis(
         total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
 
         return build_agent_analyze_result(
-            answer=result["answer"],
+            answer_seq=result["answer_seq"],
             elapsed=result["elapsed"],
             token_usage=result["token_usage"],
             total_token_usage=total_token_usage,
@@ -80,11 +80,10 @@ async def _council_doc_analysis(
     total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
 
     return build_council_analyze_result(
-        answers=result["answers"],
-        iterations=result["iterations"],
+        answer_seqs=result["answer_seqs"],
         judgements=result["judgements"],
         scores=result["scores"],
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
-        total_token_usage=total_token_usage
+        total_token_usage=total_token_usage,
     )

@@ -13,6 +13,8 @@ from rag_client import ChromaDBClientFactory
 from agent.conversation_storage import ConversationHistory
 from agent.prompts_storage import get_prompts
 from agent.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
+from api.models.analisys.answer_item import AnswerItem
+from api.models.analisys.answer_seq import AnswerSeq
 from api.utils.total_token_usage_utils import update_and_get_total_token_usage
 from config.llm_config import LLMConfig
 from config.provider_config import provider_config
@@ -168,7 +170,16 @@ class Agent:
         logger.info(f"Doc analysis is completed in {elapsed} seconds")
 
         return {
-            "answer": final_msg,
+            "answer_seq": AnswerSeq(
+                answers=[
+                    AnswerItem(
+                        answer=final_msg,
+                        author="exec",
+                        status="final",
+                        init_status="final",
+                    ),
+                ],
+            ),
             "token_usage": self._token_usage,
             "elapsed": elapsed,
             "cost_rub": cost_rub,
@@ -232,7 +243,16 @@ class Agent:
         logger.info(f"Clarification is completed in {elapsed} seconds")
 
         return {
-            "answer": final_msg,
+            "answer_seq": {
+                "answers": [
+                    {
+                        "answer": final_msg,
+                        "author": "exec",
+                        "status": "final",
+                        "init_status": "final",
+                    },
+                ]
+            },
             "token_usage": self._token_usage,
             "elapsed": elapsed,
             "cost_rub": 0,
@@ -295,7 +315,16 @@ class Agent:
         logger.info(f"Chat is completed in {elapsed} seconds")
 
         return {
-            "answer": final_msg,
+            "answer_seq": {
+                "answers": [
+                    {
+                        "answer": final_msg,
+                        "author": "exec",
+                        "status": "final",
+                        "init_status": "final",
+                    },
+                ]
+            },
             "token_usage": self._token_usage,
             "elapsed": elapsed,
             "cost_rub": 0,

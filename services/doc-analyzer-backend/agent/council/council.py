@@ -10,6 +10,8 @@ from agent.agent import Agent
 from agent.council.corrector import correct_result
 from agent.council.judge import judge_result
 from api.models.analisys.agent_data import AgentData
+from api.models.analisys.answer_item import AnswerItem
+from api.models.analisys.answer_seq import AnswerSeq, create_answer_seq
 from config.llm_config import llm_config
 from llm.token_usage import TokenUsage, create_token_usage
 
@@ -124,8 +126,7 @@ class Council:
         )
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
 
-        answers = []
-        iterations = []
+        answer_seqs = []
         judgements = []
         scores = []
 
@@ -133,14 +134,9 @@ class Council:
         total_elapsed = 0
 
         for r in results:
-            answer = r["answer"]
-            token_usage = r["token_usage"]
-            elapsed = r["elapsed"]
-
-            answers.append(answer)
-
-            exec_token_usage.add_usage(token_usage)
-            total_elapsed += elapsed
+            answer_seqs.append(r["answer_seq"])
+            exec_token_usage.add_usage(r["token_usage"])
+            total_elapsed += r["elapsed"]
 
         self._token_usage.add_usage(exec_token_usage)
         logger.info(f"Exec token usage: {self._token_usage}")
@@ -149,14 +145,13 @@ class Council:
             logger.info(f"{len(self.correctors)} correctors: correction is starting...")
             correctors_result = await correct_result(
                 correctors=self.correctors,
-                answers=answers,
+                answer_seqs=answer_seqs,
                 role=role,
                 progress_callback=progress_callback,
             )
             logger.info(f"{len(self.correctors)} correctors:: correction is completed")
 
-            answers = correctors_result["answers"]
-            iterations = correctors_result["iterations"]
+            answer_seqs = correctors_result["answer_seqs"]
 
             correctors_token_usage = correctors_result["correctors_token_usage"]
             self._token_usage.add_usage(correctors_token_usage)
@@ -166,12 +161,12 @@ class Council:
             total_elapsed += correctors_result["correctors_elapsed"]
 
         if len(self.judges) == 0:
-            [scores.append(None) for _ in answers]
+            [scores.append(None) for _ in answer_seqs]
         else:
             logger.info(f"{len(self.judges)} judges: judgement is starting...")
             judges_result = await judge_result(
                 judges=self.judges,
-                answers=answers,
+                answer_seqs=answer_seqs,
                 role=role,
                 progress_callback=progress_callback,
             )
@@ -188,8 +183,7 @@ class Council:
             total_elapsed += judges_result["judges_elapsed"]
 
         return {
-            "answers": answers,
-            "iterations": iterations,
+            "answer_seqs": answer_seqs,
             "judgements": judgements,
             "scores": scores,
             "token_usage": self._token_usage,

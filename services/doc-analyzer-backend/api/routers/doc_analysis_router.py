@@ -36,47 +36,46 @@ async def api_doc_analyze(
     agent: Agent = Depends(get_agent),
     council: Council = Depends(get_council),
 ):
-    if len(request.agents) > 1:
-        await council.create_council(request.agents)
-        result = await council.analyze_doc(
-            resources=request.resources, role=request.role
-        )
+    if len(request.agents) == 0:
+        raise AgentsListIsEmptyError()
 
-        answers = result["answers"]
-        iterations = result["iterations"]
-        judgements = result["judgements"]
-        scores = result["scores"]
+    if len(request.agents) == 1:
+        result = await agent.analyze_doc(
+            resources=request.resources, role=request.role, model=request.agents[0].model
+        )
 
         total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
 
         return AnalyzeDocResponse(
-            result=[
-                ResultData(answer=answer, judgement=judgement, score=score)
-                for answer, judgement, score in zip_longest(
-                    answers, judgements, scores, fillvalue=None
-                )
-            ],
+            result=[ResultData(answer_seq=result["answer_seq"])],
             elapsed=result["elapsed"],
             token_usage=result["token_usage"],
             total_token_usage=total_token_usage,
-            cost_rub=0,
+            cost_rub=result["cost_rub"],
         )
 
-    if len(request.agents) == 0:
-        raise AgentsListIsEmptyError()
-
-    result = await agent.analyze_doc(
-        resources=request.resources, role=request.role, model=request.agents[0].model
+    await council.create_council(request.agents)
+    result = await council.analyze_doc(
+        resources=request.resources, role=request.role
     )
+
+    answer_seqs = result["answer_seqs"]
+    judgements = result["judgements"]
+    scores = result["scores"]
 
     total_token_usage = await update_and_get_total_token_usage(result["token_usage"])
 
     return AnalyzeDocResponse(
-        result=[ResultData(answer=result["answer"])],
+        result=[
+            ResultData(answer_seq=answer_seq, judgement=judgement, score=score)
+            for answer_seq, judgement, score in zip_longest(
+                answer_seqs, judgements, scores, fillvalue=None
+            )
+        ],
         elapsed=result["elapsed"],
         token_usage=result["token_usage"],
         total_token_usage=total_token_usage,
-        cost_rub=result["cost_rub"],
+        cost_rub=0,
     )
 
 

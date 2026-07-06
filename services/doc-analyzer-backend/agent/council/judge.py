@@ -5,6 +5,7 @@ import re
 from agent_enums import Role, Assignment
 
 from agent.agent import Agent
+from api.models.analisys.answer_seq import AnswerSeq
 from llm.token_usage import create_token_usage
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 async def judge_result(
     judges: list[Agent],
-    answers: list[str],
+    answer_seqs: list[AnswerSeq],
     role: Role,
     progress_callback=None,
 ) -> dict:
@@ -31,7 +32,7 @@ async def judge_result(
                 },
             )
         logger.info(
-            f"Agent {judge.agent_id} (judge): judgement for document {answer_index} is starting..."
+            f"Agent {judge.agent_id} (judge): judgement for document {seq_index} is starting..."
         )
         try:
             return await judge.analyze_doc(
@@ -39,7 +40,7 @@ async def judge_result(
             )
         finally:
             logger.info(
-                f"Agent {judge.agent_id} (judge): judgement for document {answer_index} is completed"
+                f"Agent {judge.agent_id} (judge): judgement for document {seq_index} is completed"
             )
             if progress_callback:
                 await progress_callback(
@@ -50,27 +51,29 @@ async def judge_result(
                     },
                 )
 
-    for answer_index, answer in enumerate(answers, start=1):
+    for seq_index, seq in enumerate(answer_seqs, start=1):
         answer_score = 0
         failed_scores = 0
-        logger.info(f"Judgment for document {answer_index} is starting...")
+        logger.info(f"Judgment for document {seq_index} is starting...")
 
+        last_answer = seq.answers[-1].answer
         results = await asyncio.gather(
-            *[run_judge(judge, answer) for judge in judges],
+            *[run_judge(judge, last_answer) for judge in judges],
         )
 
-        answer_judgements = [r["answer"] for r in results]
+        answer_judgements = [r["answer_seq"].answers[0].answer for r in results]
 
         for result in results:
+            answer = result["answer_seq"].answers[0].answer
             parsed_score = re.search(
-                r"(?i)Оценка\s*:?\s*[\[\(]?\s*(\d+)\s*[\]\)]?", result["answer"]
+                r"(?i)Оценка\s*:?\s*[\[\(]?\s*(\d+)\s*[\]\)]?", answer
             )
 
             if not parsed_score:
                 scores.append(None)
                 failed_scores += 1
                 logger.error(
-                    f"Error parsing score from judge agent answer {result['answer'][:15]}"
+                    f"Error parsing score from judge agent answer {answer[:15]}"
                 )
             else:
                 score = parsed_score.group(1)
@@ -87,7 +90,7 @@ async def judge_result(
             judges_token_usage.add_usage(result["token_usage"])
             judges_elapsed += result["elapsed"]
 
-        logger.info(f"Judgment for document {answer_index} is completed")
+        logger.info(f"Judgment for document {seq_index} is completed")
 
         judgements_summary = "\n\n".join(
             f"Судья {i + 1}:\n\n{j}" for i, j in enumerate(answer_judgements)
