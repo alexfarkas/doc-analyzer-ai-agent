@@ -6,6 +6,7 @@ agent-enums - общие enum для сервисов ИИ-агента
 - Role
 - Assignment
 - PromptType
+- AnswerStatus
 """
 
 from agent_enums.answer_status import AnswerStatus
