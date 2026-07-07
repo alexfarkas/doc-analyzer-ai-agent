@@ -96,17 +96,20 @@ class Council:
         if limit:
             logger.info(f"Tokens limit: {limit}")
         else:
-            logger.info(f"Tokens limit is not set")
+            logger.info("Tokens limit is not set")
 
         results = list(
             await asyncio.gather(
-                *[run_agent(
-                    agent=agent,
-                    role=role,
-                    assignment=Assignment.EXEC,
-                    resources=resources,
-                    progress_callback=progress_callback,
-                ) for agent in self.agents],
+                *[
+                    run_agent(
+                        agent=agent,
+                        role=role,
+                        assignment=Assignment.EXEC,
+                        resources=resources,
+                        progress_callback=progress_callback,
+                    )
+                    for agent in self.agents
+                ],
             )
         )
         logger.info(f"Council of {len(self.agents)} agents: doc analysis is completed")
@@ -118,13 +121,7 @@ class Council:
         total_elapsed = 0
 
         for r in results:
-            answer_seqs.append(
-                AnswerSeq(
-                    answers=[
-                        r.answer_item
-                    ]
-                )
-            )
+            answer_seqs.append(AnswerSeq(answers=[r.answer_item]))
             exec_token_usage.add_usage(r.token_usage)
             total_elapsed += r.elapsed
 

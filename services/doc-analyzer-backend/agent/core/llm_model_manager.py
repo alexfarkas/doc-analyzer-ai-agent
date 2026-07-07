@@ -10,8 +10,7 @@ from llm.llm_factory import LLMFactory
 logger = logging.getLogger(__name__)
 
 
-class LLMModelManager():
-
+class LLMModelManager:
     def __init__(
         self,
         llm_config: LLMConfig,

@@ -6,7 +6,10 @@ from agent.messages_data.progress_data import start_event, stop_event
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
-from api.utils.api_response_builder import build_agent_doc_analysis_result, build_council_doc_analysis_result
+from api.utils.api_response_builder import (
+    build_agent_doc_analysis_result,
+    build_council_doc_analysis_result,
+)
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
 

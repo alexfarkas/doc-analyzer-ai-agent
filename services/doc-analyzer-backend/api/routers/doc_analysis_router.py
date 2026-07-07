@@ -17,8 +17,11 @@ from api.models.analisys.clarify_doc_request import ClarifyDocRequest
 from api.models.analisys.clarify_doc_response import ClarifyDocResponse
 from api.models.analisys.history_response import HistoryResponse
 from agent.runners.doc_analyze_runner import run_doc_analysis
-from api.utils.api_response_builder import build_clarify_chat_result, build_agent_doc_analysis_result, \
-    build_council_doc_analysis_result
+from api.utils.api_response_builder import (
+    build_clarify_chat_result,
+    build_agent_doc_analysis_result,
+    build_council_doc_analysis_result,
+)
 from api.utils.sse_utils import stream_with_queue
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
@@ -45,9 +48,7 @@ async def api_doc_analyze(
             model=request.agents[0].model,
         )
 
-        total_token_usage = await update_and_get_total_token_usage(
-            result.token_usage
-        )
+        total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
         return await build_agent_doc_analysis_result(
             answer_item=result.answer_item,

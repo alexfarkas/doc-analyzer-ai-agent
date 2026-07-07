@@ -90,9 +90,7 @@ async def finalize_chat_stream(
     input_tokens = await calculate_stream_tokens_usage(
         f"{system_prompt}\n{user_prompt}", model
     )
-    output_tokens = await calculate_stream_tokens_usage(
-        full_answer, model
-    )
+    output_tokens = await calculate_stream_tokens_usage(full_answer, model)
 
     chat_stream_token_usage = create_token_usage(
         input_tokens=input_tokens, output_tokens=output_tokens

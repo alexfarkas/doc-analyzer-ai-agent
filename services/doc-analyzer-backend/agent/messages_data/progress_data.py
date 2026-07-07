@@ -7,7 +7,7 @@ def start_event(agent_id: int, assignment: Assignment) -> tuple[str, dict]:
         {
             "agentId": agent_id,
             "agentType": assignment.value,
-        }
+        },
     )
 
 
@@ -17,5 +17,5 @@ def stop_event(agent_id: int, assignment: Assignment) -> tuple[str, dict]:
         {
             "agentId": agent_id,
             "agentType": assignment.value,
-        }
+        },
     )

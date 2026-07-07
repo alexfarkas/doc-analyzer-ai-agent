@@ -7,7 +7,11 @@ from db_repository import PromptRepository
 from rag_client import ChromaDBClientFactory
 
 from agent.core.llm_model_manager import LLMModelManager
-from agent.messages_data.chat_utils import prepare_chat_messages, stream_llm_response, finalize_chat_stream
+from agent.messages_data.chat_utils import (
+    prepare_chat_messages,
+    stream_llm_response,
+    finalize_chat_stream,
+)
 from agent.messages_data.messages_utils import build_messages, extract_final_answer
 from agent.messages_data.agent_data_builder import build_doc_analyse_data
 from agent.context.conversation_storage import ConversationHistory
@@ -93,7 +97,7 @@ class Agent:
         if limit:
             logger.info(f"Tokens limit: {limit}")
         else:
-            logger.info(f"Tokens limit is not set")
+            logger.info("Tokens limit is not set")
 
         await self.setup_model(model)
 
@@ -112,9 +116,7 @@ class Agent:
 
         if self._chromadb_client_factory and self._rag_collections_names:
             prompts = await get_prompts_with_rag(
-                prompts,
-                self._chromadb_client_factory,
-                self._rag_collections_names
+                prompts, self._chromadb_client_factory, self._rag_collections_names
             )
         text = build_messages(prompts, Mode.ANALYSIS)
 
@@ -197,7 +199,9 @@ class Agent:
             cost_rub=0,
         )
 
-    async def chat(self, user_message: str, model: str | None = None) -> AgentAnalysisData:
+    async def chat(
+        self, user_message: str, model: str | None = None
+    ) -> AgentAnalysisData:
         start = time.perf_counter()
         logger.info("Chat is starting...")
 
@@ -253,7 +257,8 @@ class Agent:
         )
 
     async def chat_stream(
-        self, user_message: str,
+        self,
+        user_message: str,
         model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         start = time.perf_counter()

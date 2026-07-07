@@ -113,7 +113,9 @@ def _build_conversation_rag_query(
     return query.strip()[:query_length]
 
 
-def _inject_context_into_prompts(prompts: tuple[str, str], rag_context: str) -> tuple[str, str]:
+def _inject_context_into_prompts(
+    prompts: tuple[str, str], rag_context: str
+) -> tuple[str, str]:
     logger.info("RAG context found")
 
     system_prompt, user_prompt = prompts
@@ -122,9 +124,7 @@ def _inject_context_into_prompts(prompts: tuple[str, str], rag_context: str) -> 
         user_prompt = _inject_context_into_prompt(user_prompt, rag_context)
     elif system_prompt:
         logger.info("Injecting RAG context to system prompt")
-        system_prompt = _inject_context_into_prompt(
-            system_prompt, rag_context
-        )
+        system_prompt = _inject_context_into_prompt(system_prompt, rag_context)
     logger.debug(f"System prompt with RAG: {system_prompt}")
     logger.debug(f"User prompt with RAG: {user_prompt}")
 
@@ -146,7 +146,9 @@ def _inject_context_into_prompt(prompt: str, context: str) -> str:
     return f"{prompt}{context_block}"
 
 
-async def _retrieve_rag_context(rag_query: str, chromadb_clients: list[ChromaDBClient]) -> str:
+async def _retrieve_rag_context(
+    rag_query: str, chromadb_clients: list[ChromaDBClient]
+) -> str:
     logger.info("Retrieving RAG context...")
     rag_context_parts = []
     for client in chromadb_clients:

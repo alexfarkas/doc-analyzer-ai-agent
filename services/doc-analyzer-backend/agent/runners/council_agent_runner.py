@@ -22,7 +22,9 @@ async def run_agent(
 
     doc_logging = f" of document {doc_index}" if doc_index else ""
 
-    logger.info(f"Agent {agent.agent_id} ({assignment.value}): processing{doc_logging} is starting...")
+    logger.info(
+        f"Agent {agent.agent_id} ({assignment.value}): processing{doc_logging} is starting..."
+    )
     try:
         return await agent.analyze_doc(
             resources=resources,
@@ -30,6 +32,8 @@ async def run_agent(
             assignment=assignment,
         )
     finally:
-        logger.info(f"Agent {agent.agent_id} ({assignment.value}): processing{doc_logging} is completed")
+        logger.info(
+            f"Agent {agent.agent_id} ({assignment.value}): processing{doc_logging} is completed"
+        )
         if progress_callback:
             await progress_callback(stop_event(agent.agent_id, assignment))

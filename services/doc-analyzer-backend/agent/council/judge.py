@@ -31,14 +31,17 @@ async def judge_result(
 
         last_answer = seq.answers[-1].answer
         results = await asyncio.gather(
-            *[run_agent(
-                agent=judge,
-                role=role,
-                assignment=Assignment.JUDGE,
-                resources=[last_answer],
-                progress_callback=progress_callback,
-                doc_index=seq_index,
-            ) for judge in judges],
+            *[
+                run_agent(
+                    agent=judge,
+                    role=role,
+                    assignment=Assignment.JUDGE,
+                    resources=[last_answer],
+                    progress_callback=progress_callback,
+                    doc_index=seq_index,
+                )
+                for judge in judges
+            ],
         )
 
         answer_judgements = [r.answer_item.answer for r in results]
@@ -85,7 +88,9 @@ async def judge_result(
             )
         else:
             average_answer_score = None
-            logger.warning(f"All {len(judges)} judges failed to parse score for document {seq_index}")
+            logger.warning(
+                f"All {len(judges)} judges failed to parse score for document {seq_index}"
+            )
         scores.append(average_answer_score)
 
     return JudgementData(

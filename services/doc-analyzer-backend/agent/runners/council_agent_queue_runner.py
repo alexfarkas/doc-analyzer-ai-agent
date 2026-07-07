@@ -64,7 +64,9 @@ async def run_agent_queue(
             await out_q.put((idx, new_answer_item.answer, seq))
 
     except Exception as e:
-        logger.error(f"Agent {agent.agent_id} ({assignment.value}) error: {e}", exc_info=True)
+        logger.error(
+            f"Agent {agent.agent_id} ({assignment.value}) error: {e}", exc_info=True
+        )
         if not is_last:
             try:
                 await out_q.put(None)

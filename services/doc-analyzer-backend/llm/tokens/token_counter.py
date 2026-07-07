@@ -44,7 +44,7 @@ async def calculate_stream_tokens_usage(text: str, model: str) -> int:
         return max(1, len(text) // 4)
 
 
-def calculate_tokens_usage(messages: List[BaseMessage], model: str) -> int:
+def calculate_tokens_usage(messages: list[BaseMessage], model: str) -> int:
     encoder = get_encoder(model)
     tokens = 0
 
