@@ -1,5 +1,3 @@
-from itertools import zip_longest
-
 from agent_enums import Assignment
 
 from agent.agent import Agent
@@ -8,8 +6,7 @@ from agent.messages_data.progress_data import start_event, stop_event
 from api.exceptions.exceptions import AgentsListIsEmptyError
 from api.models.analisys.analyze_doc_request import AnalyzeDocRequest
 from api.models.analisys.analyze_doc_response import AnalyzeDocResponse
-from api.models.analisys.answer_seq import AnswerSeq
-from api.models.analisys.result_data import ResultData
+from api.utils.api_response_builder import build_agent_doc_analysis_result, build_council_doc_analysis_result
 from llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
 
 
@@ -46,21 +43,13 @@ async def _agent_doc_analysis(
 
         total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
-        return AnalyzeDocResponse(
-            result=[
-                ResultData(
-                    answer_seq=AnswerSeq(
-                        answers=[
-                            result.answer_item.model_dump(),
-                        ]
-                    ),
-                ),
-            ],
-            token_usage=result.token_usage.model_dump() if result.token_usage else None,
-            total_token_usage=total_token_usage.model_dump(),
+        return await build_agent_doc_analysis_result(
+            answer_item=result.answer_item,
+            token_usage=result.token_usage,
+            total_token_usage=total_token_usage,
             elapsed=result.elapsed,
-            cost_rub=0,
-        ).model_dump()
+            cost_rub=result.cost_rub,
+        )
 
     finally:
         if progress_callback:
@@ -83,22 +72,11 @@ async def _council_doc_analysis(
 
     total_token_usage = await update_and_get_total_token_usage(result.token_usage)
 
-    return AnalyzeDocResponse(
-        result=[
-            ResultData(
-                answer_seq=answer_seq.model_dump(),
-                judgement=judgement,
-                score=score,
-            )
-            for answer_seq, judgement, score in zip_longest(
-                result.answer_seqs,
-                result.judgements,
-                result.scores,
-                fillvalue=None,
-            )
-        ],
-        token_usage=result.token_usage.model_dump() if result.token_usage else None,
-        total_token_usage=total_token_usage.model_dump(),
+    return await build_council_doc_analysis_result(
+        answer_seqs=result.answer_seqs,
+        judgements=result.judgements,
+        scores=result.scores,
+        token_usage=result.token_usage,
+        total_token_usage=total_token_usage,
         elapsed=result.elapsed,
-        cost_rub=0,
-    ).model_dump()
+    )
