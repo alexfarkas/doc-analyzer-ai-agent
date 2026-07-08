@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-import httpx
+import httpx2
 from bs4 import BeautifulSoup
 
 from tools.llm_doc_reader.llm_doc_reader_config import LLMDocReaderConfig
@@ -23,7 +23,7 @@ class WebParser:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        with httpx.Client(
+        with httpx2.Client(
             follow_redirects=True, timeout=15.0, headers=headers
         ) as client:
             resp = client.get(url)
@@ -56,5 +56,5 @@ class WebParser:
                 return assemble_markdown(
                     [text], [], Path(url), self.config, extra_meta=meta
                 )
-            except httpx.HTTPStatusError as e:
+            except httpx2.HTTPStatusError as e:
                 logger.error(f"Error fetching URL {url}: {e}")

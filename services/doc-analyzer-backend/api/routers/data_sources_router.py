@@ -33,7 +33,7 @@ async def api_upload_file(file: UploadFile = File(...)):
 @router.post("/upload/from-url", response_model=UploadFromUrlResponse)
 async def api_upload_from_url(request: UploadFromUrlRequest):
     text = upload_content_from_url(request.url)
-    return UploadFromUrlResponse(html=text, url=request.url)
+    return UploadFromUrlResponse(url=request.url, html=text)
 
 
 @router.get("/files/preview", response_model=FilesPreviewResponse)

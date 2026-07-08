@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UploadFromUrlResponse(BaseModel):
-    html: str
-    url: str
+    url: str = Field(..., description="Resources upload URL")
+    html: str = Field(..., description="Resources uploaded HTML")
