@@ -34,4 +34,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["rag_client*"]
+include = ["rag_client*", "decorators*"]
