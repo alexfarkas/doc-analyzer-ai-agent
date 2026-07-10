@@ -48,6 +48,7 @@ async def _agent_doc_analysis(
 
         return await build_agent_doc_analysis_result(
             answer_item=result.answer_item,
+            role=request.role,
             token_usage=result.token_usage,
             total_token_usage=total_token_usage,
             elapsed=result.elapsed,
@@ -77,6 +78,7 @@ async def _council_doc_analysis(
 
     return await build_council_doc_analysis_result(
         answer_seqs=result.answer_seqs,
+        role=request.role,
         judgements=result.judgements,
         scores=result.scores,
         token_usage=result.token_usage,

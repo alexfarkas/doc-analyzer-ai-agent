@@ -1,6 +1,8 @@
 from itertools import zip_longest
 from typing import Callable, Awaitable
 
+from agent_enums import Role
+
 from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
 from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import AnalyzeDocResponse
 from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
@@ -12,6 +14,7 @@ from src.doc_analyzer_backend.llm.tokens.total_token_usage_utils import update_a
 
 async def build_agent_doc_analysis_result(
     answer_item: AnswerItem,
+    role: Role,
     token_usage: TokenUsage | None,
     total_token_usage: TokenUsage,
     elapsed: float,
@@ -27,6 +30,7 @@ async def build_agent_doc_analysis_result(
                 ),
             ),
         ],
+        role=role,
         token_usage=token_usage.model_dump() if token_usage else None,
         total_token_usage=total_token_usage.model_dump(),
         elapsed=elapsed,
@@ -36,6 +40,7 @@ async def build_agent_doc_analysis_result(
 
 async def build_council_doc_analysis_result(
     answer_seqs: list[AnswerSeq],
+    role: Role,
     judgements: list[str],
     scores: list[float | None],
     token_usage: TokenUsage | None,
@@ -57,6 +62,7 @@ async def build_council_doc_analysis_result(
                 fillvalue=None,
             )
         ],
+        role=role,
         token_usage=token_usage.model_dump() if token_usage else None,
         total_token_usage=total_token_usage.model_dump(),
         elapsed=elapsed,

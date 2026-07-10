@@ -49,13 +49,16 @@ async def lifespan(app: FastAPI):
 
     logger.info("Agent initialization")
     app.state.agent = await Agent.create_agent(
-        llm_config, prompt_repository, chromadb_client_factory
+        llm_config=llm_config,
+        prompt_repository=prompt_repository,
+        chromadb_client_factory=chromadb_client_factory,
     )
     logger.info("Agent initialized")
 
     logger.info("Council initialization")
     app.state.council = await Council.init_council(
-        prompt_repository, chromadb_client_factory
+        prompt_repository=prompt_repository,
+        chromadb_client_factory=chromadb_client_factory,
     )
     logger.info("Council initialized")
 
