@@ -2,7 +2,13 @@ import { useMemo, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export default function AnalysisResult({ content, isLoading, activeTab = 0, onTabChange }) {
+export default function AnalysisResult({
+  content,
+  rolesConfig = [],
+  isLoading,
+  activeTab = 0,
+  onTabChange,
+}) {
   const [iterationSelections, setIterationSelections] = useState({});
   const [compareState, setCompareState] = useState(null);
 
@@ -22,12 +28,14 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
         return {
           answer_seq: { answers },
           score: typeof item.score === 'number' ? item.score : undefined,
+          role: item.role || '',
         };
       }
 
       return {
         answer_seq: { answers: [] },
         score: typeof item.score === 'number' ? item.score : undefined,
+        role: item.role || '',
       };
     });
   }, [content]);
@@ -57,19 +65,37 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
     return answers[answers.length - 1]?.answer ?? '';
   };
 
+  const getAssignmentTitle = (roleApiParam, authorApiParam) => {
+    if (!authorApiParam) return '';
+    if (!rolesConfig || rolesConfig.length === 0) return authorApiParam;
+
+    const role = rolesConfig.find(r => r.api_param === roleApiParam);
+    if (!role || !Array.isArray(role.assignments)) {
+      return authorApiParam;
+    }
+
+    const assignment = role.assignments.find(a => a.api_param === authorApiParam);
+    return assignment?.ui_title || authorApiParam;
+  };
+
   const getIterationLabel = (tabIndex, iterationIndex) => {
     const answers = getAnswers(tabIndex);
     const item = answers[iterationIndex];
     if (!item) return '';
 
-    if (item.status === 'final') {
-      return item.author
-        ? `✨ Финальный результат (${item.author})`
-        : '✨ Финальный результат';
-    }
+    const roleApiParam = parsedContent[tabIndex]?.role;
+    return getAssignmentTitle(roleApiParam, item.author);
+  };
 
-    const authorLabel = item.author || 'Промежуточный';
-    return `📝 ${authorLabel}: ${iterationIndex + 1} из ${answers.length}`;
+  const getIterationTooltip = (tabIndex, iterationIndex) => {
+    const answers = getAnswers(tabIndex);
+    const item = answers[iterationIndex];
+    if (!item) return '';
+
+    const title = getIterationLabel(tabIndex, iterationIndex);
+    const isFinal = item.status === 'final';
+    const prefix = isFinal ? 'Финальный: ' : `Версия ${iterationIndex + 1}: `;
+    return `${prefix}${title}`;
   };
 
   if (isLoading) {
@@ -226,7 +252,7 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
                 key={i}
                 type="button"
                 onClick={() => handleIterationSelect(i, side)}
-                title={isFinal ? 'Финальный результат' : `Промежуточный результат ${i + 1}`}
+                title={getIterationTooltip(safeActiveTab, i)}
                 className={`
                   min-w-[32px] h-8 px-2 text-xs font-semibold rounded transition-all shrink-0
                   ${isThisSelected
@@ -300,7 +326,7 @@ export default function AnalysisResult({ content, isLoading, activeTab = 0, onTa
                     key={i}
                     type="button"
                     onClick={() => handleIterationSelect(i, 'left')}
-                    title={isFinal ? 'Финальный результат' : `Промежуточный результат ${i + 1}`}
+                    title={getIterationTooltip(safeActiveTab, i)}
                     className={`
                       min-w-[32px] h-8 px-2 text-xs font-semibold rounded transition-all shrink-0
                       ${isSelected

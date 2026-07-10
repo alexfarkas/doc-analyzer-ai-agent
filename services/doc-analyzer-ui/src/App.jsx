@@ -440,6 +440,7 @@ function App() {
 
                 case 'complete':
                   const resultArray = Array.isArray(data.result) ? data.result : [data.result];
+                  const roleApiParam = data.role || '';
 
                   const normalizedResult = resultArray.map(item => {
                     if (item.answer_seq && Array.isArray(item.answer_seq.answers)) {
@@ -455,6 +456,7 @@ function App() {
                         answer_seq: { answers },
                         score: item.score,
                         judgement: item.judgement,
+                        role: roleApiParam,
                       };
                     }
 
@@ -462,6 +464,7 @@ function App() {
                       answer_seq: { answers: [] },
                       score: item.score,
                       judgement: item.judgement,
+                      role: roleApiParam,
                     };
                   });
 
@@ -577,6 +580,7 @@ function App() {
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 min-h-[400px]">
             <AnalysisResult
               content={analysisResult}
+              rolesConfig={rolesConfig}
               isLoading={isLoading}
               activeTab={activeTab}
               onTabChange={setActiveTab}
