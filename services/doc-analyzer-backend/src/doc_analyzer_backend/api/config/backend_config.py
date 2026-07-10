@@ -16,7 +16,14 @@ backend_config = ConfigResponse(
         RoleData(
             api_param=Role.SUMMARY_ANALYST.value,
             ui_title="Саммари аналитик",
-            models=[ModelData(provider="openai", name="gpt-5-nano")],
+            models=[
+                ModelData(provider="openai", name="gpt-5-nano"),
+                ModelData(provider="openai", name="gpt-5.4-nano"),
+                ModelData(provider="openai", name="gpt-4o-mini"),
+                ModelData(provider="openrouter/qwen", name="qwen3.6-plus"),
+                ModelData(provider="deepseek", name="deepseek-v4-flash"),
+                ModelData(provider="gemini", name="gemini-2.5-flash-lite"),
+            ],
             assignments=[
                 AssignmentData(api_param=Assignment.EXEC.value, ui_title="Исполнитель"),
                 AssignmentData(
@@ -32,7 +39,14 @@ backend_config = ConfigResponse(
         RoleData(
             api_param=Role.TECH_ANALYST.value,
             ui_title="Технический аналитик",
-            models=[ModelData(provider="openai", name="gpt-5-nano")],
+            models=[
+                ModelData(provider="openai", name="gpt-5-nano"),
+                ModelData(provider="openai", name="gpt-5.4-nano"),
+                ModelData(provider="openai", name="gpt-4o-mini"),
+                ModelData(provider="openrouter/qwen", name="qwen3.6-plus"),
+                ModelData(provider="deepseek", name="deepseek-v4-flash"),
+                ModelData(provider="gemini", name="gemini-2.5-flash-lite"),
+            ],
             assignments=[
                 AssignmentData(api_param=Assignment.EXEC.value, ui_title="Исполнитель"),
                 AssignmentData(
@@ -48,7 +62,14 @@ backend_config = ConfigResponse(
         RoleData(
             api_param=Role.CODE_REVIEWER.value,
             ui_title="Код-ревьюер",
-            models=[ModelData(provider="openai", name="gpt-5-nano")],
+            models=[
+                ModelData(provider="openai", name="gpt-5-nano"),
+                ModelData(provider="openai", name="gpt-5.4-nano"),
+                ModelData(provider="openai", name="gpt-4o-mini"),
+                ModelData(provider="openrouter/qwen", name="qwen3.6-plus"),
+                ModelData(provider="deepseek", name="deepseek-v4-flash"),
+                ModelData(provider="gemini", name="gemini-2.5-flash-lite"),
+            ],
             assignments=[
                 AssignmentData(api_param=Assignment.EXEC.value, ui_title="Исполнитель"),
                 AssignmentData(
@@ -64,7 +85,14 @@ backend_config = ConfigResponse(
         RoleData(
             api_param=Role.TEACHER.value,
             ui_title="Преподаватель",
-            models=[ModelData(provider="openai", name="gpt-5-nano")],
+            models=[
+                ModelData(provider="openai", name="gpt-5-nano"),
+                ModelData(provider="openai", name="gpt-5.4-nano"),
+                ModelData(provider="openai", name="gpt-4o-mini"),
+                ModelData(provider="openrouter/qwen", name="qwen3.6-plus"),
+                ModelData(provider="deepseek", name="deepseek-v4-flash"),
+                ModelData(provider="gemini", name="gemini-2.5-flash-lite"),
+            ],
             assignments=[
                 AssignmentData(api_param=Assignment.EXEC.value, ui_title="Исполнитель"),
                 AssignmentData(
