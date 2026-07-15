@@ -16,10 +16,15 @@ class LLMModelManager:
         llm_config: LLMConfig,
         tools: list[BaseTool],
     ):
-        self._llm_config = llm_config
         self._provider = llm_config.provider
         self._model = llm_config.model
+
+        self._llm_config = llm_config
         self._tools = tools
+
+    @property
+    def current_provider(self) -> str:
+        return self._provider
 
     @property
     def current_model(self) -> str:

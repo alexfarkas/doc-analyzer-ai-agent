@@ -19,14 +19,14 @@ from src.doc_analyzer_backend.agent.messages_data.chat_utils import (
 )
 from src.doc_analyzer_backend.agent.messages_data.messages_utils import build_messages, extract_final_answer
 from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.consumption_data import create_consumption_data
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
+from src.doc_analyzer_backend.llm.tokens.cost_counter import calculate_cost
 from src.doc_analyzer_backend.llm.tokens.token_counter import (
     calculate_token_usage,
-    calculate_cost,
     calculate_tokens_usage,
 )
-from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage, create_token_usage
 from src.doc_analyzer_backend.tools.tools import init_tools
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,6 @@ class Agent:
 
         self._llm_model_manager: LLMModelManager | None = None
         self._history: ConversationHistory = ConversationHistory()
-        self._token_usage: TokenUsage = create_token_usage()
 
         self._prompt_repository: PromptRepository | None = None
         self._chromadb_client_factory: ChromaDBClientFactory | None = None
@@ -93,7 +92,7 @@ class Agent:
         limit: int | None = None,
     ) -> AgentAnalysisData:
         start = time.perf_counter()
-        logger.info("Doc analysis is starting...")
+        logger.info(f"Agent {self.agent_id}: doc analysis is starting...")
         if limit:
             logger.info(f"Tokens limit: {limit}")
         else:
@@ -108,8 +107,6 @@ class Agent:
             prompt_repository=self._prompt_repository,
             resources=resources,
         )
-
-        self._token_usage = create_token_usage()
 
         self._history.clear()
         self._history.save(prompts)
@@ -128,20 +125,32 @@ class Agent:
 
         self._history.save_ai_message(final_msg)
 
-        self._token_usage = calculate_token_usage(result["messages"], self.llm_config)
-        cost_rub = calculate_cost(self._token_usage, self.llm_config, "RUB")
-
-        logger.info(f"Doc analysis token usage: {self._token_usage}")
-        # logger.info(f"Cost rub: {cost_rub}")
-
         elapsed = time.perf_counter() - start
-        logger.info(f"Doc analysis is completed in {elapsed} seconds")
+        logger.info(f"Agent {self.agent_id}: doc analysis is completed in {elapsed} seconds")
+
+        token_usage = calculate_token_usage(
+            messages=result["messages"],
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+        )
+        cost = calculate_cost(
+            token_usage=token_usage,
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+            currency="RUB",
+        )
+        consumption_data = create_consumption_data(
+            token_usage=token_usage,
+            elapsed=elapsed,
+            cost=cost,
+        )
+
+        logger.info(f"Agent {self.agent_id} tokens usage: {token_usage}")
+        logger.info(f"Agent {self.agent_id} cost: {cost}")
 
         return build_doc_analyse_data(
             final_msg=final_msg,
-            token_usage=self._token_usage,
-            elapsed=elapsed,
-            cost_rub=0,
+            consumption_data=consumption_data,
         )
 
     async def clarify(
@@ -182,21 +191,29 @@ class Agent:
 
         logger.debug(f"Answer from model:\n{final_msg}")
 
-        clarification_token_usage = calculate_token_usage(
-            result["messages"], self.llm_config
-        )
-        self._token_usage.add_usage(clarification_token_usage)
-        logger.info(f"Clarification token usage: {clarification_token_usage}")
-        logger.info(f"Overall token usage: {self._token_usage}")
-
         elapsed = time.perf_counter() - start
         logger.info(f"Clarification is completed in {elapsed} seconds")
 
+        token_usage = calculate_token_usage(
+            messages=result["messages"],
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+        )
+        cost = calculate_cost(
+            token_usage=token_usage,
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+            currency="RUB",
+        )
+        consumption_data = create_consumption_data(
+            token_usage=token_usage,
+            elapsed=elapsed,
+            cost=cost,
+        )
+
         return build_doc_analyse_data(
             final_msg=final_msg,
-            token_usage=self._token_usage,
-            elapsed=elapsed,
-            cost_rub=0,
+            consumption_data=consumption_data,
         )
 
     async def chat(
@@ -240,20 +257,29 @@ class Agent:
         self._history.save_user_prompt(user_message)
         self._history.save_ai_message(final_msg)
 
-        chat_token_usage = calculate_token_usage(result["messages"], self.llm_config)
-        self._token_usage.add_usage(chat_token_usage)
-
-        logger.info(f"Chat token usage: {self._token_usage}")
-        logger.info(f"Overall token usage: {self._token_usage}")
-
         elapsed = time.perf_counter() - start
         logger.info(f"Chat is completed in {elapsed} seconds")
 
+        token_usage = calculate_token_usage(
+            messages=result["messages"],
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+        )
+        cost = calculate_cost(
+            token_usage=token_usage,
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+            currency="RUB",
+        )
+        consumption_data = create_consumption_data(
+            token_usage=token_usage,
+            elapsed=elapsed,
+            cost=cost,
+        )
+
         return build_doc_analyse_data(
             final_msg=final_msg,
-            token_usage=self._token_usage,
-            elapsed=elapsed,
-            cost_rub=0,
+            consumption_data=consumption_data,
         )
 
     async def chat_stream(
@@ -297,9 +323,9 @@ class Agent:
                     user_message=user_message,
                     full_answer=full_answer,
                     messages=messages,
+                    provider=self._llm_model_manager.current_provider,
                     model=self._llm_model_manager.current_model,
                     history=self._history,
-                    token_usage=self._token_usage,
                     start_time=start,
                 )
 

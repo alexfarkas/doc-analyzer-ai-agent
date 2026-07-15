@@ -6,7 +6,7 @@ from agent_enums import Role, Assignment, AnswerStatus
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.messages_data.progress_data import start_event, stop_event
 from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage
+from src.doc_analyzer_backend.agent.models.correction_data import CorrectionData
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,7 @@ async def run_agent_queue(
     out_q: asyncio.Queue,
     is_last: bool,
     elapsed_lock: asyncio.Lock,
-    token_usage: TokenUsage,
-    elapsed: float,
+    correction_data: CorrectionData,
     progress_callback=None,
 ):
     if progress_callback:
@@ -57,8 +56,7 @@ async def run_agent_queue(
             )
 
             async with elapsed_lock:
-                token_usage.add_usage(result.token_usage)
-                elapsed += result.elapsed
+                correction_data.consumption_data.update_by_data(data=result.consumption_data)
 
             seq.answers.append(new_answer_item)
             await out_q.put((idx, new_answer_item.answer, seq))
@@ -70,7 +68,7 @@ async def run_agent_queue(
         if not is_last:
             try:
                 await out_q.put(None)
-            except Exception as e:
+            except Exception:
                 pass
         raise
     finally:

@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
+from src.doc_analyzer_backend.agent.models.consumption_data import ConsumptionData
 from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage
 
 
 class ChatMetadata(BaseModel):
-    token_usage: TokenUsage | None
+    consumption_data: ConsumptionData
     total_token_usage: TokenUsage | None
-    elapsed: float
-    cost_rub: float = 0
+    total_cost: float = 0.0

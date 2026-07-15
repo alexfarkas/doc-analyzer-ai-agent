@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
 from src.doc_analyzer_backend.agent.models.consumption_data import ConsumptionData
-from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
 
 
-class AgentAnalysisData(BaseModel):
-    answer_item: AnswerItem
+class JudgeDocData(BaseModel):
+    answer_judgements: list[str]
+    answer_score: float
+    success_count: int
+    failed_count: int
     consumption_data: ConsumptionData

@@ -6,21 +6,19 @@ from agent_enums import Role, Assignment, AnswerStatus
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.models.correction_data import CorrectionData
 from src.doc_analyzer_backend.agent.runners.council_agent_queue_runner import run_agent_queue
-from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
-from src.doc_analyzer_backend.llm.tokens.token_usage import create_token_usage
 
 logger = logging.getLogger(__name__)
 
 
 async def correct_result(
     correctors: list[Agent],
-    answer_seqs: list[AnswerSeq],
     role: Role,
+    correction_data: CorrectionData,
     progress_callback=None,
 ) -> CorrectionData:
-    correctors_token_usage = create_token_usage()
-    correctors_elapsed = 0
     elapsed_lock = asyncio.Lock()
+
+    answer_seqs = correction_data.answer_seqs
 
     for seq in answer_seqs:
         for item in seq.answers:
@@ -50,8 +48,7 @@ async def correct_result(
                 out_q=queues[i + 1],
                 is_last=is_last,
                 elapsed_lock=elapsed_lock,
-                token_usage=correctors_token_usage,
-                elapsed=correctors_elapsed,
+                correction_data=correction_data,
                 progress_callback=progress_callback,
             )
         )
@@ -65,8 +62,4 @@ async def correct_result(
             last_item.status = AnswerStatus.FINAL
             last_item.init_status = AnswerStatus.FINAL
 
-    return CorrectionData(
-        answer_seqs=answer_seqs,
-        token_usage=correctors_token_usage,
-        elapsed=correctors_elapsed,
-    )
+    return correction_data

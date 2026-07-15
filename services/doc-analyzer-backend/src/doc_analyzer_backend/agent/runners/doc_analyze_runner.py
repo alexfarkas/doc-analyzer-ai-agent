@@ -10,7 +10,7 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_agent_doc_analysis_result,
     build_council_doc_analysis_result,
 )
-from src.doc_analyzer_backend.llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
+from src.doc_analyzer_backend.llm.tokens.total_tokens_cost_utils import update_total_consumption
 
 
 async def run_doc_analysis(
@@ -44,15 +44,16 @@ async def _agent_doc_analysis(
             limit=request.limit,
         )
 
-        total_token_usage = await update_and_get_total_token_usage(result.token_usage)
+        total_token_usage, total_cost = await update_total_consumption(
+            consumption_data=result.consumption_data,
+        )
 
         return await build_agent_doc_analysis_result(
             answer_item=result.answer_item,
             role=request.role,
-            token_usage=result.token_usage,
+            consumption_data=result.consumption_data,
             total_token_usage=total_token_usage,
-            elapsed=result.elapsed,
-            cost_rub=result.cost_rub,
+            total_cost=total_cost,
         )
 
     finally:
@@ -74,14 +75,16 @@ async def _council_doc_analysis(
         progress_callback=progress_callback,
     )
 
-    total_token_usage = await update_and_get_total_token_usage(result.token_usage)
+    total_token_usage, total_cost = await update_total_consumption(
+        consumption_data=result.consumption_data,
+    )
 
     return await build_council_doc_analysis_result(
         answer_seqs=result.answer_seqs,
         role=request.role,
         judgements=result.judgements,
         scores=result.scores,
-        token_usage=result.token_usage,
+        consumption_data=result.consumption_data,
         total_token_usage=total_token_usage,
-        elapsed=result.elapsed,
+        total_cost=total_cost,
     )
