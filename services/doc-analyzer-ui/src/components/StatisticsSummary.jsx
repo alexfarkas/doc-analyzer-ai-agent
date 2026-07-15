@@ -11,6 +11,17 @@ const formatNumber = (num) => {
   return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
+// 🔹 Форматирование стоимости (float с 2 знаками после запятой)
+const formatCost = (num) => {
+  if (num == null || num === undefined || num === '') return '—';
+  const numValue = Number(num);
+  if (isNaN(numValue)) return '—';
+  return numValue
+    .toFixed(2)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    .replace('.', ',');
+};
+
 // 🔹 Форматирование времени: секунды с 2 знаками ИЛИ "x мин y с"
 const formatTime = (seconds) => {
   if (seconds == null || seconds === undefined) return '—';
@@ -34,6 +45,9 @@ export default function StatisticsSummary({
   totalTokensAll,
   inputTokensAll,
   outputTokensAll,
+  cost,
+  totalCost,
+  currency,
   limit,
   limitSettings,
   onLimitChange,
@@ -48,18 +62,20 @@ export default function StatisticsSummary({
   const hasSpentTokens = totalTokens !== undefined && totalTokens !== null && totalTokens !== '';
   const hasTotalTokens = totalTokensAll !== undefined && totalTokensAll !== null && totalTokensAll !== '';
 
+  // 🔹 Флаги для стоимости
+  const hasCurrency = currency !== null && currency !== undefined && currency !== '';
+  const hasCost = hasCurrency && cost !== null && cost !== undefined && cost !== '';
+  const hasTotalCost = hasCurrency && totalCost !== null && totalCost !== undefined && totalCost !== '';
+  const hasCostData = hasTotalTokens || hasTotalCost;
+
   // 🔹 Вычисление цвета для значения "Всего токенов" с полной защитой
   const totalTokensColorClass = useMemo(() => {
-    // Если нет данных — обычный цвет
     if (!hasTotalTokens) return 'text-gray-900';
 
-    // Если лимит не задан — обычный цвет
     if (!limit || limit === '' || limit === null || limit === undefined) {
       return 'text-gray-900';
     }
 
-    // 🔹 КРИТИЧЕСКИ ВАЖНО: всегда преобразуем limit к числу
-    // Используем parseInt для строки, Number для всего остального
     let limitValue;
     if (typeof limit === 'string') {
       limitValue = parseInt(limit, 10);
@@ -69,12 +85,10 @@ export default function StatisticsSummary({
       return 'text-gray-900';
     }
 
-    // Проверка на валидность числа
     if (isNaN(limitValue) || !isFinite(limitValue) || limitValue <= 0) {
       return 'text-gray-900';
     }
 
-    // 🔹 КРИТИЧЕСКИ ВАЖНО: всегда преобразуем totalTokensAll к числу
     let totalTokensValue;
     if (typeof totalTokensAll === 'string') {
       totalTokensValue = parseInt(totalTokensAll, 10);
@@ -84,26 +98,20 @@ export default function StatisticsSummary({
       return 'text-gray-900';
     }
 
-    // Проверка на валидность числа
     if (isNaN(totalTokensValue) || !isFinite(totalTokensValue)) {
       return 'text-gray-900';
     }
 
-    // 🔹 Критическое состояние: потрачено >= лимита → КРАСНЫЙ
-    // (независимо от режима и порогов)
     if (totalTokensValue >= limitValue) {
       return 'text-red-600';
     }
 
-    // Если нет настроек порогов — обычный цвет
     if (!limitSettings || limitSettings === null || limitSettings === undefined) {
       return 'text-gray-900';
     }
 
-    // 🔹 Разница между лимитом и потраченными токенами
     const diff = limitValue - totalTokensValue;
 
-    // 🔹 Режим абсолютного значения
     if (limitSettings.limit_threshold_mode === 'abs_value') {
       let threshold;
       if (typeof limitSettings.limit_warning_threshold === 'string') {
@@ -115,12 +123,11 @@ export default function StatisticsSummary({
       }
 
       if (!isNaN(threshold) && isFinite(threshold) && threshold > 0 && diff <= threshold) {
-        return 'text-yellow-600'; // 🔹 ИЗМЕНЕНО: оранжевый → желтый
+        return 'text-yellow-600';
       }
       return 'text-gray-900';
     }
 
-    // 🔹 Режим процентов
     if (limitSettings.limit_threshold_mode === 'percent') {
       let thresholdPc;
       if (typeof limitSettings.limit_warning_threshold_pc === 'string') {
@@ -132,10 +139,9 @@ export default function StatisticsSummary({
       }
 
       if (!isNaN(thresholdPc) && isFinite(thresholdPc) && thresholdPc > 0 && limitValue > 0) {
-        // 🔹 Формула: current_pc = diff * 100 / limit
         const currentPc = (diff * 100) / limitValue;
         if (!isNaN(currentPc) && isFinite(currentPc) && currentPc <= thresholdPc) {
-          return 'text-yellow-600'; // 🔹 ИЗМЕНЕНО: оранжевый → желтый
+          return 'text-yellow-600';
         }
       }
       return 'text-gray-900';
@@ -247,9 +253,8 @@ export default function StatisticsSummary({
     <section className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm relative">
       <div className="space-y-2 text-sm text-gray-700">
 
-        {/* 🔹 СТРОКА 1: "Потрачено токенов" + "Первая генерация" (справа) */}
+        {/* 🔹 СТРОКА 1: "Потрачено токенов" + стоимость в скобках + "Первая генерация" */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          {/* Блок "Потрачено токенов" */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-medium text-gray-500">Потрачено токенов:</span>
             <span className="font-mono text-gray-900">
@@ -269,21 +274,25 @@ export default function StatisticsSummary({
                 </span>)
               </span>
             )}
+
+            {/* 🔹 ИЗМЕНЕНО: стоимость в квадратных скобках, без слова "Стоимость:" */}
+            {hasCost && (
+              <span className="font-mono text-gray-700">
+                [{formatCost(cost)} {currency}]
+              </span>
+            )}
           </div>
 
-          {/* 🔹 "Первая генерация" — прижата к правому краю */}
           <div className="flex items-center gap-2 ml-auto">
             <span className="font-medium text-gray-500">Первая генерация:</span>
             <span className="font-mono text-gray-900">{formatTime(elapsed)}</span>
           </div>
         </div>
 
-        {/* 🔹 СТРОКА 2: "Всего токенов" + корзина + "Лимит" */}
+        {/* 🔹 СТРОКА 2: "Всего токенов" + стоимость в скобках + корзина + "Лимит" */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-          {/* Блок "Всего токенов" */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-medium text-gray-500">Всего токенов:</span>
-            {/* 🔹 Цвет значения теперь динамический с плавным переходом */}
             <span
               className={`font-mono transition-colors duration-300 ${totalTokensColorClass}`}
               title={hasTotalTokens ? `Точное значение: ${totalTokensAll}` : undefined}
@@ -304,14 +313,21 @@ export default function StatisticsSummary({
                 </span>)
               </span>
             )}
+
+            {/* 🔹 ИЗМЕНЕНО: стоимость в квадратных скобках, без слова "Стоимость:" */}
+            {hasTotalCost && (
+              <span className="font-mono text-gray-700">
+                [{formatCost(totalCost)} {currency}]
+              </span>
+            )}
           </div>
 
-          {/* 🔹 Иконка корзины */}
-          {hasTotalTokens && (
+          {/* 🔹 Иконка корзины — ПОСЛЕ блока стоимости */}
+          {hasCostData && (
             <button
               type="button"
               onClick={handleClearClick}
-              title="Очистить данные о количестве потраченных токенов"
+              title="Очистить накопленные данные о токенах и стоимости"
               className="flex items-center justify-center w-7 h-7 rounded-md
                        text-gray-400 hover:text-red-600 hover:bg-red-50
                        transition-all duration-150 ml-1"
@@ -335,7 +351,6 @@ export default function StatisticsSummary({
             </button>
           )}
 
-          {/* 🔹 Блок "Лимит" */}
           <div className="flex items-center gap-2 ml-8">
             <span className="font-medium text-gray-500 whitespace-nowrap">Лимит:</span>
             <input
@@ -363,7 +378,7 @@ export default function StatisticsSummary({
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
           <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm mx-4">
             <p className="text-sm text-gray-700 mb-4">
-              Вы уверены, что хотите очистить данные о количестве потраченных токенов?
+              Вы уверены, что хотите очистить накопленные данные о количестве токенов и стоимости?
             </p>
 
             {clearError && (

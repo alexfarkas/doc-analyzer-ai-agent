@@ -27,7 +27,11 @@ function App() {
     outputTokens: null,
     totalTokensAll: null,
     inputTokensAll: null,
-    outputTokensAll: null
+    outputTokensAll: null,
+    // 🔹 НОВОЕ: данные о стоимости
+    cost: null,
+    totalCost: null,
+    currency: null,
   });
 
   const [judgementKey, setJudgementKey] = useState(0);
@@ -124,15 +128,26 @@ function App() {
         return res.json();
       })
       .then((data) => {
-        if (!data?.total_token_usage) return;
+        setStats((prev) => {
+          const updated = { ...prev };
 
-        const usage = data.total_token_usage;
-        setStats((prev) => ({
-          ...prev,
-          totalTokensAll: usage.total_tokens ?? null,
-          inputTokensAll: usage.input_tokens ?? null,
-          outputTokensAll: usage.output_tokens ?? null,
-        }));
+          if (data?.total_token_usage) {
+            const usage = data.total_token_usage;
+            updated.totalTokensAll = usage.total_tokens ?? null;
+            updated.inputTokensAll = usage.input_tokens ?? null;
+            updated.outputTokensAll = usage.output_tokens ?? null;
+          }
+
+          // 🔹 НОВОЕ: загрузка стоимости
+          if (data?.currency) {
+            updated.currency = data.currency;
+            if (data.total_cost !== undefined && data.total_cost !== null) {
+              updated.totalCost = data.total_cost;
+            }
+          }
+
+          return updated;
+        });
       })
       .catch((err) => {
         console.warn('Failed to fetch /api/tokens/total:', err);
@@ -283,7 +298,14 @@ function App() {
     });
   }, []);
 
-  const handleStatsUpdate = useCallback((usage, totalUsage) => {
+  // 🔹 ИЗМЕНЕНО: расширенная сигнатура с cost, totalCost, currency
+  const handleStatsUpdate = useCallback((
+    usage,
+    totalUsage,
+    cost = null,
+    totalCost = null,
+    currency = null
+  ) => {
     setStats(prev => {
       const updated = { ...prev };
 
@@ -297,6 +319,17 @@ function App() {
         updated.totalTokensAll = totalUsage.total_tokens;
         updated.inputTokensAll = totalUsage.input_tokens;
         updated.outputTokensAll = totalUsage.output_tokens;
+      }
+
+      // 🔹 НОВОЕ: обновление стоимости (только если есть currency)
+      if (currency) {
+        updated.currency = currency;
+        if (cost !== null && cost !== undefined) {
+          updated.cost = cost;
+        }
+        if (totalCost !== null && totalCost !== undefined) {
+          updated.totalCost = totalCost;
+        }
       }
 
       return updated;
@@ -326,7 +359,10 @@ function App() {
           ...prev,
           totalTokensAll: null,
           inputTokensAll: null,
-          outputTokensAll: null
+          outputTokensAll: null,
+          // 🔹 НОВОЕ: обнуляем данные о стоимости
+          totalCost: null,
+          currency: prev.currency, // currency сохраняем (это системная настройка)
         }));
         return { success: true };
       } else {
@@ -359,7 +395,8 @@ function App() {
       elapsed: null,
       totalTokens: null,
       inputTokens: null,
-      outputTokens: null
+      outputTokens: null,
+      cost: null,
     }));
 
     setJudgementKey(prev => prev + 1);
@@ -488,6 +525,17 @@ function App() {
                       updated.outputTokensAll = data.total_token_usage.output_tokens || 0;
                     }
 
+                    // 🔹 НОВОЕ: обработка данных о стоимости
+                    if (data.currency) {
+                      updated.currency = data.currency;
+                      if (data.cost !== undefined && data.cost !== null) {
+                        updated.cost = data.cost;
+                      }
+                      if (data.total_cost !== undefined && data.total_cost !== null) {
+                        updated.totalCost = data.total_cost;
+                      }
+                    }
+
                     return updated;
                   });
                   break;
@@ -569,6 +617,9 @@ function App() {
           totalTokensAll={stats.totalTokensAll}
           inputTokensAll={stats.inputTokensAll}
           outputTokensAll={stats.outputTokensAll}
+          cost={stats.cost}
+          totalCost={stats.totalCost}
+          currency={stats.currency}
           limit={limit}
           limitSettings={limitSettings}
           onLimitChange={handleLimitChange}
