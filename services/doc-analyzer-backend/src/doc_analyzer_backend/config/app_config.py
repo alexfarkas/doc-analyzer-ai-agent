@@ -48,6 +48,10 @@ class AppConfig(BaseSettings):
         default="./documents", description="Documents upload and analysis folder"
     )
 
+    pricing_filepath: str = Field(
+        default="./documents", description="Documents upload and analysis folder"
+    )
+
     max_file_preview_size: int = Field(
         default=1024 * 1024, description="Max file preview size in bytes"
     )
