@@ -25,5 +25,20 @@ class AppStateManager:
         async with self._lock:
             self._data.token_usage = create_token_usage()
 
+    async def get_cost(self) -> float:
+        return self._data.cost
+
+    async def set_cost(self, cost: float):
+        async with self._lock:
+            self._data.cost = cost
+
+    async def add_cost(self, cost: float = 0.0):
+        async with self._lock:
+            self._data.cost += cost
+
+    async def clear_cost(self):
+        async with self._lock:
+            self._data.cost = 0.0
+
 
 app_state = AppStateManager()

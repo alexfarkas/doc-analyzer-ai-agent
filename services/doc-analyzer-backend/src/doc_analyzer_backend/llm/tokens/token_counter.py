@@ -4,8 +4,8 @@ from functools import lru_cache
 import tiktoken
 from langchain_core.messages import BaseMessage
 
-from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage, create_token_usage
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,9 @@ def calculate_tokens_usage(messages: list[BaseMessage], model: str) -> int:
 
 
 def calculate_token_usage(
-    messages: list[BaseMessage], llm_config: LLMConfig
+    messages: list[BaseMessage],
+    provider: str,
+    model: str,
 ) -> TokenUsage:
     token_usage = create_token_usage()
 
@@ -94,8 +96,8 @@ def calculate_token_usage(
                 "Tokens usage not found in metadata, using tiktoken to calculate"
             )
             token_usage = create_token_usage(
-                input_tokens=calculate_tokens_usage(messages, llm_config.model),
-                output_tokens=calculate_tokens_usage(messages, llm_config.model),
+                input_tokens=calculate_tokens_usage(messages, model),
+                output_tokens=calculate_tokens_usage(messages, model),
             )
         else:
             token_usage.add_tokens(
@@ -103,7 +105,7 @@ def calculate_token_usage(
                 added_output_tokens=_count_output_tokens_usage(usage),
             )
 
-            if token_usage.any_tokens_eq_zero() and llm_config.provider == "ollama":
+            if token_usage.any_tokens_eq_zero() and provider == "ollama":
                 logger.info(
                     "Unable to calculate tokens usage with metadata, using ollama format to calculate"
                 )
@@ -115,18 +117,12 @@ def calculate_token_usage(
             if token_usage.any_tokens_eq_zero():
                 logger.info("Unable to calculate tokens, using tiktoken to calculate")
                 token_usage = create_token_usage(
-                    input_tokens=calculate_tokens_usage(messages, llm_config.model),
-                    output_tokens=calculate_tokens_usage(messages, llm_config.model),
+                    input_tokens=calculate_tokens_usage(messages, model),
+                    output_tokens=calculate_tokens_usage(messages, model),
                 )
 
+    logger.info(f"Token usage: {token_usage}")
     return token_usage
-
-
-PRICING = {
-    "ollama": {"input": 0.0, "output": 0.0},
-    "openai": {"input": 0.15, "output": 0.60},
-    "anthropic": {"input": 3.00, "output": 15.00},
-}
 
 
 def _find_tokens_usage_block(metadata: dict) -> dict | None:
@@ -162,19 +158,3 @@ def _count_output_tokens_usage(usage: dict) -> int:
         return usage.get("output_tokens", 0)
     else:
         return 0
-
-
-def calculate_cost(
-    token_usage: TokenUsage, llm_config: LLMConfig, currency: str = "USD"
-) -> float:
-    provider = (
-        llm_config.cost_calculation_provider
-        if llm_config.cost_calculation_provider is not None
-        else llm_config.provider
-    )
-    rates = PRICING.get(provider)
-    cost = (
-        token_usage.input_tokens * rates["input"] / 1_000_000
-        + token_usage.output_tokens * rates["output"] / 1_000_000
-    )
-    return round(cost, 2) if currency == "USD" else round(cost * 100)
