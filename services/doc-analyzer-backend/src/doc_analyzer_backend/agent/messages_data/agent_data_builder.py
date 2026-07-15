@@ -1,7 +1,7 @@
 from agent_enums import Assignment, AnswerStatus
 
-from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.consumption_data import ConsumptionData
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import ConsumptionData
 from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
 
 

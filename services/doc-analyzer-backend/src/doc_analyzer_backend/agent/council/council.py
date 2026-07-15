@@ -9,8 +9,8 @@ from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.stages.corrector_stage import run_corrector_stage
 from src.doc_analyzer_backend.agent.council.stages.exec_stage import run_exec_stage
 from src.doc_analyzer_backend.agent.council.stages.judge_stage import run_judge_stage
-from src.doc_analyzer_backend.agent.models.consumption_data import create_consumption_data
-from src.doc_analyzer_backend.agent.models.council_analysis_data import CouncilAnalysisData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
+from src.doc_analyzer_backend.agent.models.analysis.council_analysis_data import CouncilAnalysisData
 from src.doc_analyzer_backend.api.models.analisys.agent_data import AgentData
 from src.doc_analyzer_backend.config.llm_config import llm_config
 

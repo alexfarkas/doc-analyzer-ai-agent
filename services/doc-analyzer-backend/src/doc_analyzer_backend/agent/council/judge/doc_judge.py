@@ -1,9 +1,9 @@
 import logging
 import re
 
-from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.consumption_data import create_consumption_data
-from src.doc_analyzer_backend.agent.models.judge_doc_data import JudgeDocData
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
+from src.doc_analyzer_backend.agent.models.council_assignments.judge_doc_data import JudgeDocData
 
 logger = logging.getLogger(__name__)
 

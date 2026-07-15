@@ -23,7 +23,7 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_council_doc_analysis_result,
 )
 from src.doc_analyzer_backend.api.utils.sse_utils import stream_with_queue
-from src.doc_analyzer_backend.llm.tokens.total_tokens_cost_utils import update_total_consumption
+from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import update_total_consumption
 
 logger = logging.getLogger(__name__)
 

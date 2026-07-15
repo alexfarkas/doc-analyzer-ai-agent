@@ -6,6 +6,9 @@ from agent_enums import Assignment, Mode, Role
 from db_repository import PromptRepository
 from rag_client import ChromaDBClientFactory
 
+from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import calculate_cost
+from src.doc_analyzer_backend.agent.consumption_counters.token_counter import calculate_tokens_usage, \
+    calculate_token_usage
 from src.doc_analyzer_backend.agent.context.conversation_storage import ConversationHistory
 from src.doc_analyzer_backend.agent.context.prompts_storage import get_prompts
 from src.doc_analyzer_backend.agent.context.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
@@ -18,15 +21,10 @@ from src.doc_analyzer_backend.agent.messages_data.chat_utils import (
     finalize_chat_stream,
 )
 from src.doc_analyzer_backend.agent.messages_data.messages_utils import build_messages, extract_final_answer
-from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.consumption_data import create_consumption_data
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
-from src.doc_analyzer_backend.llm.tokens.cost_counter import calculate_cost
-from src.doc_analyzer_backend.llm.tokens.token_counter import (
-    calculate_token_usage,
-    calculate_tokens_usage,
-)
 from src.doc_analyzer_backend.tools.tools import init_tools
 
 logger = logging.getLogger(__name__)

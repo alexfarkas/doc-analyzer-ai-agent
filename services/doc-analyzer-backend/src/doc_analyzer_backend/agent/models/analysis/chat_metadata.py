@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from src.doc_analyzer_backend.agent.models.consumption_data import ConsumptionData
-from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import ConsumptionData
+from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage
 
 
 class ChatMetadata(BaseModel):

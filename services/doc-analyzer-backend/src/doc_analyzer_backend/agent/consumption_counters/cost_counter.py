@@ -1,7 +1,7 @@
 import logging
 
 from src.doc_analyzer_backend.config.settings import app_settings
-from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage
+from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 

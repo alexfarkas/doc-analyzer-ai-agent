@@ -1,6 +1,6 @@
 import logging
 
-from src.doc_analyzer_backend.agent.models.judge_doc_data import JudgeDocData
+from src.doc_analyzer_backend.agent.models.council_assignments.judge_doc_data import JudgeDocData
 
 
 logger = logging.getLogger(__name__)
