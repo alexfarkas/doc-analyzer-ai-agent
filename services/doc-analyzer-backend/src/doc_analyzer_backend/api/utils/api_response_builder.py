@@ -4,21 +4,21 @@ from typing import Callable, Awaitable
 from agent_enums import Role
 
 from src.doc_analyzer_backend.agent.models.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.consumption_data import ConsumptionData
 from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import AnalyzeDocResponse
 from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
 from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
 from src.doc_analyzer_backend.api.models.analisys.result_data import ResultData
 from src.doc_analyzer_backend.llm.tokens.token_usage import TokenUsage
-from src.doc_analyzer_backend.llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
+from src.doc_analyzer_backend.llm.tokens.total_tokens_cost_utils import update_total_consumption
 
 
 async def build_agent_doc_analysis_result(
     answer_item: AnswerItem,
     role: Role,
-    token_usage: TokenUsage | None,
+    consumption_data: ConsumptionData,
     total_token_usage: TokenUsage,
-    elapsed: float,
-    cost_rub: float = 0,
+    total_cost: float = 0.0,
 ):
     return AnalyzeDocResponse(
         result=[
@@ -31,10 +31,11 @@ async def build_agent_doc_analysis_result(
             ),
         ],
         role=role,
-        token_usage=token_usage.model_dump() if token_usage else None,
+        token_usage=consumption_data.token_usage.model_dump() if consumption_data.token_usage else None,
         total_token_usage=total_token_usage.model_dump(),
-        elapsed=elapsed,
-        cost_rub=cost_rub,
+        elapsed=consumption_data.elapsed,
+        cost=consumption_data.cost,
+        total_cost=total_cost,
     ).model_dump()
 
 
@@ -43,10 +44,9 @@ async def build_council_doc_analysis_result(
     role: Role,
     judgements: list[str],
     scores: list[float | None],
-    token_usage: TokenUsage | None,
+    consumption_data: ConsumptionData,
     total_token_usage: TokenUsage,
-    elapsed: float,
-    cost_rub: float = 0,
+    total_cost: float = 0.0,
 ):
     return AnalyzeDocResponse(
         result=[
@@ -63,10 +63,11 @@ async def build_council_doc_analysis_result(
             )
         ],
         role=role,
-        token_usage=token_usage.model_dump() if token_usage else None,
+        token_usage=consumption_data.token_usage.model_dump() if consumption_data.token_usage else None,
         total_token_usage=total_token_usage.model_dump(),
-        elapsed=elapsed,
-        cost_rub=cost_rub,
+        elapsed=consumption_data.elapsed,
+        cost=consumption_data.cost,
+        total_cost=total_cost,
     ).model_dump()
 
 
@@ -75,11 +76,14 @@ async def build_clarify_chat_result(
     response_model,
 ):
     result = await agent_call()
-    total_token_usage = await update_and_get_total_token_usage(result.token_usage)
+    total_token_usage, total_cost = await update_total_consumption(
+        consumption_data=result.consumption_data,
+    )
     return response_model(
         result=ResultData(answer_seq=result.answer_seq),
-        elapsed=result.elapsed,
-        token_usage=result.token_usage,
+        token_usage=result.consumption_data.token_usage,
         total_token_usage=total_token_usage,
-        cost_rub=result.cost_rub,
+        elapsed=result.consumption_data.elapsed,
+        cost=result.consumption_data.cost,
+        total_cost=total_cost,
     )

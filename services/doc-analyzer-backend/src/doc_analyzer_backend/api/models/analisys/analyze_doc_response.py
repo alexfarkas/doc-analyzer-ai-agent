@@ -11,4 +11,6 @@ class AnalyzeDocResponse(BaseModel):
     token_usage: TokenUsage | None
     total_token_usage: TokenUsage | None
     elapsed: float
-    cost_rub: float
+    cost: float
+    total_cost: float
+    currency: str = "RUB"

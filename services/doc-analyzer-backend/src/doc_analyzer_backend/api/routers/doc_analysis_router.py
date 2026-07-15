@@ -23,7 +23,7 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_council_doc_analysis_result,
 )
 from src.doc_analyzer_backend.api.utils.sse_utils import stream_with_queue
-from src.doc_analyzer_backend.llm.tokens.total_token_usage_utils import update_and_get_total_token_usage
+from src.doc_analyzer_backend.llm.tokens.total_tokens_cost_utils import update_total_consumption
 
 logger = logging.getLogger(__name__)
 
@@ -48,28 +48,33 @@ async def api_doc_analyze(
             model=request.agents[0].model,
         )
 
-        total_token_usage = await update_and_get_total_token_usage(result.token_usage)
+        total_token_usage, total_cost = await update_total_consumption(
+            consumption_data=result.consumption_data,
+        )
 
         return await build_agent_doc_analysis_result(
             answer_item=result.answer_item,
-            token_usage=result.token_usage,
+            role=request.role,
+            consumption_data=result.consumption_data,
             total_token_usage=total_token_usage,
-            elapsed=result.elapsed,
-            cost_rub=result.cost_rub,
+            total_cost=total_cost,
         )
 
     await council.create_council(request.agents)
     result = await council.analyze_doc(resources=request.resources, role=request.role)
 
-    total_token_usage = await update_and_get_total_token_usage(result.token_usage)
+    total_token_usage, total_cost = await update_total_consumption(
+        consumption_data=result.consumption_data,
+    )
 
     return await build_council_doc_analysis_result(
         answer_seqs=result.answer_seqs,
+        role=request.role,
         judgements=result.judgements,
         scores=result.scores,
-        token_usage=result.token_usage,
+        consumption_data=result.consumption_data,
         total_token_usage=total_token_usage,
-        elapsed=result.elapsed,
+        total_cost=total_cost,
     )
 
 

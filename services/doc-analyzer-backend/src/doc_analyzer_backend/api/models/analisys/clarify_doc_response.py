@@ -9,4 +9,6 @@ class ClarifyDocResponse(BaseModel):
     token_usage: TokenUsage
     total_token_usage: TokenUsage
     elapsed: float
-    cost_rub: float
+    cost: float
+    total_cost: float
+    currency: str = "RUB"
