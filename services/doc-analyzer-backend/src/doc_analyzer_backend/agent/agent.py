@@ -6,12 +6,9 @@ from agent_enums import Assignment, Mode, Role
 from db_repository import PromptRepository
 from rag_client import ChromaDBClientFactory
 
-from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import (
-    calculate_cost,
-)
+from src.doc_analyzer_backend.agent.ai_invocation import ai_invoke_track
 from src.doc_analyzer_backend.agent.consumption_counters.token_counter import (
     calculate_tokens_usage,
-    calculate_token_usage,
 )
 from src.doc_analyzer_backend.agent.context.conversation_storage import (
     ConversationHistory,
@@ -33,13 +30,9 @@ from src.doc_analyzer_backend.agent.messages_data.chat_utils import (
 )
 from src.doc_analyzer_backend.agent.messages_data.messages_utils import (
     build_messages,
-    extract_final_answer,
 )
 from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
     AgentAnalysisData,
-)
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
-    create_consumption_data,
 )
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
@@ -107,8 +100,6 @@ class Agent:
         model: str | None = None,
         limit: int | None = None,
     ) -> AgentAnalysisData:
-        start = time.perf_counter()
-        logger.info(f"Agent {self.agent_id}: doc analysis is starting...")
         if limit:
             logger.info(f"Tokens limit: {limit}")
         else:
@@ -131,40 +122,21 @@ class Agent:
             prompts = await get_prompts_with_rag(
                 prompts, self._chromadb_client_factory, self._rag_collections_names
             )
-        text = build_messages(prompts, Mode.ANALYSIS)
+        messages = build_messages(prompts, Mode.ANALYSIS)
 
-        estimated_tokens = calculate_tokens_usage(text, self.llm_config.model)
+        estimated_tokens = calculate_tokens_usage(messages, self.llm_config.model)
         logger.info(f"Estimated input tokens: {estimated_tokens}")
 
-        result = await self.app.ainvoke({"messages": text})
-        final_msg = await extract_final_answer(result["messages"])
+        final_msg, consumption_data = ai_invoke_track(
+            agent_id=self.agent_id,
+            app=self.app,
+            messages=messages,
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+            type_message="doc analysis",
+        )
 
         self._history.save_ai_message(final_msg)
-
-        elapsed = time.perf_counter() - start
-        logger.info(
-            f"Agent {self.agent_id}: doc analysis is completed in {elapsed} seconds"
-        )
-
-        token_usage = calculate_token_usage(
-            messages=result["messages"],
-            provider=self._llm_model_manager.current_provider,
-            model=self._llm_model_manager.current_model,
-        )
-        cost = calculate_cost(
-            token_usage=token_usage,
-            provider=self._llm_model_manager.current_provider,
-            model=self._llm_model_manager.current_model,
-            currency="RUB",
-        )
-        consumption_data = create_consumption_data(
-            token_usage=token_usage,
-            elapsed=elapsed,
-            cost=cost,
-        )
-
-        logger.info(f"Agent {self.agent_id} tokens usage: {token_usage}")
-        logger.info(f"Agent {self.agent_id} cost: {cost}")
 
         return build_doc_analyse_data(
             final_msg=final_msg,
@@ -177,9 +149,6 @@ class Agent:
         user_message: str,
         model: str | None = None,
     ) -> AgentAnalysisData:
-        start = time.perf_counter()
-        logger.info("Clarification is starting...")
-
         await self.setup_model(model)
 
         logger.debug(f"History system prompt{self._history.system_prompt}")
@@ -202,31 +171,15 @@ class Agent:
             ai_answer=ai_answer,
         )
 
-        text = build_messages(prompts, Mode.CLARIFICATION)
+        messages = build_messages(prompts, Mode.CLARIFICATION)
 
-        result = await self.app.ainvoke({"messages": text})
-        final_msg = await extract_final_answer(result["messages"])
-
-        logger.debug(f"Answer from model:\n{final_msg}")
-
-        elapsed = time.perf_counter() - start
-        logger.info(f"Clarification is completed in {elapsed} seconds")
-
-        token_usage = calculate_token_usage(
-            messages=result["messages"],
+        final_msg, consumption_data = ai_invoke_track(
+            agent_id=self.agent_id,
+            app=self.app,
+            messages=messages,
             provider=self._llm_model_manager.current_provider,
             model=self._llm_model_manager.current_model,
-        )
-        cost = calculate_cost(
-            token_usage=token_usage,
-            provider=self._llm_model_manager.current_provider,
-            model=self._llm_model_manager.current_model,
-            currency="RUB",
-        )
-        consumption_data = create_consumption_data(
-            token_usage=token_usage,
-            elapsed=elapsed,
-            cost=cost,
+            type_message="clarification",
         )
 
         return build_doc_analyse_data(
@@ -237,9 +190,6 @@ class Agent:
     async def chat(
         self, user_message: str, model: str | None = None
     ) -> AgentAnalysisData:
-        start = time.perf_counter()
-        logger.info("Chat is starting...")
-
         await self.setup_model(model)
 
         logger.debug(f"History system prompt{self._history.system_prompt}")
@@ -263,37 +213,21 @@ class Agent:
             history=self._history.as_string(),
         )
 
-        text = build_messages(prompts, Mode.CHAT)
+        messages = build_messages(prompts, Mode.CHAT)
 
         self._history.trim()
 
-        result = await self.app.ainvoke({"messages": text})
-        final_msg = await extract_final_answer(result["messages"])
-
-        logger.debug(f"Answer from model:\n{final_msg}")
+        final_msg, consumption_data = ai_invoke_track(
+            agent_id=self.agent_id,
+            app=self.app,
+            messages=messages,
+            provider=self._llm_model_manager.current_provider,
+            model=self._llm_model_manager.current_model,
+            type_message="chat",
+        )
 
         self._history.save_user_prompt(user_message)
         self._history.save_ai_message(final_msg)
-
-        elapsed = time.perf_counter() - start
-        logger.info(f"Chat is completed in {elapsed} seconds")
-
-        token_usage = calculate_token_usage(
-            messages=result["messages"],
-            provider=self._llm_model_manager.current_provider,
-            model=self._llm_model_manager.current_model,
-        )
-        cost = calculate_cost(
-            token_usage=token_usage,
-            provider=self._llm_model_manager.current_provider,
-            model=self._llm_model_manager.current_model,
-            currency="RUB",
-        )
-        consumption_data = create_consumption_data(
-            token_usage=token_usage,
-            elapsed=elapsed,
-            cost=cost,
-        )
 
         return build_doc_analyse_data(
             final_msg=final_msg,
@@ -306,7 +240,7 @@ class Agent:
         model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         start = time.perf_counter()
-        logger.info("Chat stream is starting...")
+        logger.info(f"Agent {self.agent_id}: chat stream is starting...")
 
         await self.setup_model(model)
 
