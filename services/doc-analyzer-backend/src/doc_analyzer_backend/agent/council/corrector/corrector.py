@@ -4,8 +4,12 @@ import logging
 from agent_enums import Role, Assignment, AnswerStatus
 
 from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.models.council_assignments.correction_data import CorrectionData
-from src.doc_analyzer_backend.agent.runners.council_agent_queue_runner import run_agent_queue
+from src.doc_analyzer_backend.agent.models.council_assignments.correction_data import (
+    CorrectionData,
+)
+from src.doc_analyzer_backend.agent.runners.council_agent_queue_runner import (
+    run_agent_queue,
+)
 
 logger = logging.getLogger(__name__)
 

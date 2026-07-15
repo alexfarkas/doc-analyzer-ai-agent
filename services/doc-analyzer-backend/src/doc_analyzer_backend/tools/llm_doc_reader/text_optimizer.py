@@ -1,4 +1,7 @@
-from src.doc_analyzer_backend.tools.llm_doc_reader.consts import RE_EMPTY_LINES, RE_WHITESPACE
+from src.doc_analyzer_backend.tools.llm_doc_reader.consts import (
+    RE_EMPTY_LINES,
+    RE_WHITESPACE,
+)
 
 
 # ──────────────────────────────────────────────────────────────

@@ -3,8 +3,12 @@ import logging
 from fastapi import APIRouter, Depends
 
 from src.doc_analyzer_backend.api.dependencies.dependencies import get_app_state
-from src.doc_analyzer_backend.api.models.tokens.clear_tokens_response import ClearTokensResponse
-from src.doc_analyzer_backend.api.models.tokens.total_tokens_response import TotalTokensResponse
+from src.doc_analyzer_backend.api.models.tokens.clear_tokens_response import (
+    ClearTokensResponse,
+)
+from src.doc_analyzer_backend.api.models.tokens.total_tokens_response import (
+    TotalTokensResponse,
+)
 from src.doc_analyzer_backend.data.app_state_manager import AppStateManager
 
 logger = logging.getLogger(__name__)

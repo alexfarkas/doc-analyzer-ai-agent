@@ -7,15 +7,30 @@ from starlette.responses import StreamingResponse
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.council import Council
-from src.doc_analyzer_backend.api.dependencies.dependencies import get_agent, get_council
+from src.doc_analyzer_backend.api.dependencies.dependencies import (
+    get_agent,
+    get_council,
+)
 from src.doc_analyzer_backend.api.exceptions.exceptions import AgentsListIsEmptyError
-from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import AnalyzeDocRequest
-from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import AnalyzeDocResponse
+from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import (
+    AnalyzeDocRequest,
+)
+from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import (
+    AnalyzeDocResponse,
+)
 from src.doc_analyzer_backend.api.models.analisys.chat_doc_request import ChatDocRequest
-from src.doc_analyzer_backend.api.models.analisys.chat_doc_response import ChatDocResponse
-from src.doc_analyzer_backend.api.models.analisys.clarify_doc_request import ClarifyDocRequest
-from src.doc_analyzer_backend.api.models.analisys.clarify_doc_response import ClarifyDocResponse
-from src.doc_analyzer_backend.api.models.analisys.history_response import HistoryResponse
+from src.doc_analyzer_backend.api.models.analisys.chat_doc_response import (
+    ChatDocResponse,
+)
+from src.doc_analyzer_backend.api.models.analisys.clarify_doc_request import (
+    ClarifyDocRequest,
+)
+from src.doc_analyzer_backend.api.models.analisys.clarify_doc_response import (
+    ClarifyDocResponse,
+)
+from src.doc_analyzer_backend.api.models.analisys.history_response import (
+    HistoryResponse,
+)
 from src.doc_analyzer_backend.agent.runners.doc_analyze_runner import run_doc_analysis
 from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_clarify_chat_result,
@@ -23,7 +38,9 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_council_doc_analysis_result,
 )
 from src.doc_analyzer_backend.api.utils.sse_utils import stream_with_queue
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import update_total_consumption
+from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
+    update_total_consumption,
+)
 
 logger = logging.getLogger(__name__)
 

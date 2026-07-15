@@ -4,7 +4,9 @@ from pathlib import Path
 import httpx2
 from bs4 import BeautifulSoup
 
-from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import LLMDocReaderConfig
+from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import (
+    LLMDocReaderConfig,
+)
 from src.doc_analyzer_backend.tools.llm_doc_reader.consts import RE_EMPTY_LINES
 from src.doc_analyzer_backend.tools.llm_doc_reader.utils import assemble_markdown
 

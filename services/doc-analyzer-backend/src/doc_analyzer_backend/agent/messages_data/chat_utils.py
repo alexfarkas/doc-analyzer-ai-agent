@@ -8,16 +8,26 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, AIMessageChunk
 from rag_client import ChromaDBClientFactory
 
-from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import calculate_cost
-from src.doc_analyzer_backend.agent.consumption_counters.token_counter import calculate_stream_tokens_usage
-from src.doc_analyzer_backend.agent.context.conversation_storage import ConversationHistory
+from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import (
+    calculate_cost,
+)
+from src.doc_analyzer_backend.agent.consumption_counters.token_counter import (
+    calculate_stream_tokens_usage,
+)
+from src.doc_analyzer_backend.agent.context.conversation_storage import (
+    ConversationHistory,
+)
 from src.doc_analyzer_backend.agent.context.prompts_storage import get_prompts
 from src.doc_analyzer_backend.agent.context.rag_context import get_user_prompt_with_rag
 from src.doc_analyzer_backend.agent.messages_data.messages_utils import build_messages
 from src.doc_analyzer_backend.agent.models.analysis.chat_metadata import ChatMetadata
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    create_consumption_data,
+)
 from src.doc_analyzer_backend.agent.models.tokens.token_usage import create_token_usage
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import update_total_consumption
+from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
+    update_total_consumption,
+)
 
 logger = logging.getLogger(__name__)
 

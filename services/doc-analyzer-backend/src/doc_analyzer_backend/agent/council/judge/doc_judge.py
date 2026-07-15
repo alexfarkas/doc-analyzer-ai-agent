@@ -1,9 +1,15 @@
 import logging
 import re
 
-from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
-from src.doc_analyzer_backend.agent.models.council_assignments.judge_doc_data import JudgeDocData
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
+    AgentAnalysisData,
+)
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    create_consumption_data,
+)
+from src.doc_analyzer_backend.agent.models.council_assignments.judge_doc_data import (
+    JudgeDocData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +60,5 @@ def _parse_score(answer: str) -> tuple[float, int]:
             logger.info(f"Judge agent score: {score}")
             return int(score), 0
         except ValueError:
-            logger.error(
-                f"Error receiving score from judge agent answer: {score}"
-            )
+            logger.error(f"Error receiving score from judge agent answer: {score}")
             return 0, 1

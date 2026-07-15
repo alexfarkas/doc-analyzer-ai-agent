@@ -1,6 +1,9 @@
 from agent_enums import Assignment, Role
 
-from src.doc_analyzer_backend.api.config.limit_data import LimitSettings, LimitThresholdMode
+from src.doc_analyzer_backend.api.config.limit_data import (
+    LimitSettings,
+    LimitThresholdMode,
+)
 from src.doc_analyzer_backend.api.models.config.assignment_data import AssignmentData
 from src.doc_analyzer_backend.api.models.config.config_response import ConfigResponse
 from src.doc_analyzer_backend.api.models.config.model_data import ModelData

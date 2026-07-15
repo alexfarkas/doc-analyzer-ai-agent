@@ -3,7 +3,9 @@ import logging
 from langchain_core.messages import HumanMessage
 from rag_client import ChromaDBClientFactory, ChromaDBClient
 
-from src.doc_analyzer_backend.agent.context.conversation_storage import ConversationHistory
+from src.doc_analyzer_backend.agent.context.conversation_storage import (
+    ConversationHistory,
+)
 
 logger = logging.getLogger(__name__)
 

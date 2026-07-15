@@ -20,7 +20,12 @@ class LLMFactory:
                 return LLMMock(fixed_response=llm_config.mock_response)
             case "ollama":
                 return ChatOllama(model=model, base_url=llm_config.base_url)
-            case p if p in ["openai", "gemini", "deepseek", "anthropic"] or p.startswith("openrouter"):
+            case p if p in [
+                "openai",
+                "gemini",
+                "deepseek",
+                "anthropic",
+            ] or p.startswith("openrouter"):
                 return ChatOpenAI(
                     model=f"{provider}/{model}",
                     base_url=llm_config.base_url,

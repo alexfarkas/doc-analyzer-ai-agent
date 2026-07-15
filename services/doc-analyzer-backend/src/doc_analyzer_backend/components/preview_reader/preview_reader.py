@@ -9,7 +9,10 @@ from src.doc_analyzer_backend.api.exceptions.exceptions import (
     AgentUnsupportedFileExtensionError,
     AgentFilePreviewError,
 )
-from src.doc_analyzer_backend.components.preview_reader.consts import CODE_LANGS, IMAGE_MIMES
+from src.doc_analyzer_backend.components.preview_reader.consts import (
+    CODE_LANGS,
+    IMAGE_MIMES,
+)
 from src.doc_analyzer_backend.components.preview_reader.preview_parsers import (
     parse_text,
     parse_markup,

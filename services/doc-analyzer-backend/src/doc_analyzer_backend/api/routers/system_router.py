@@ -6,8 +6,14 @@ from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.api.config.backend_config import backend_config
 from src.doc_analyzer_backend.api.dependencies.dependencies import get_agent
 from src.doc_analyzer_backend.api.models.config.config_response import ConfigResponse
-from src.doc_analyzer_backend.api.models.status.health_check_response import HealthCheckResponse
-from src.doc_analyzer_backend.api.models.status.status_response import StatusResponse, ToolData, RAGData
+from src.doc_analyzer_backend.api.models.status.health_check_response import (
+    HealthCheckResponse,
+)
+from src.doc_analyzer_backend.api.models.status.status_response import (
+    StatusResponse,
+    ToolData,
+    RAGData,
+)
 from src.doc_analyzer_backend.config.llm_config import llm_config
 from src.doc_analyzer_backend.config.rag_config import rag_config
 

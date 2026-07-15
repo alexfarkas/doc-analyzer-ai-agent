@@ -2,15 +2,24 @@ from agent_enums import Assignment
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.council import Council
-from src.doc_analyzer_backend.agent.messages_data.progress_data import start_event, stop_event
+from src.doc_analyzer_backend.agent.messages_data.progress_data import (
+    start_event,
+    stop_event,
+)
 from src.doc_analyzer_backend.api.exceptions.exceptions import AgentsListIsEmptyError
-from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import AnalyzeDocRequest
-from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import AnalyzeDocResponse
+from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import (
+    AnalyzeDocRequest,
+)
+from src.doc_analyzer_backend.api.models.analisys.analyze_doc_response import (
+    AnalyzeDocResponse,
+)
 from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_agent_doc_analysis_result,
     build_council_doc_analysis_result,
 )
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import update_total_consumption
+from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
+    update_total_consumption,
+)
 
 
 async def run_doc_analysis(

@@ -12,8 +12,14 @@ from docx import Document
 from openpyxl import load_workbook
 from pptx import Presentation
 
-from src.doc_analyzer_backend.components.preview_reader.preview_reader import CODE_LANGS, IMAGE_MIMES
-from src.doc_analyzer_backend.components.preview_reader.utils import normalize_rows, extract_zip_media
+from src.doc_analyzer_backend.components.preview_reader.preview_reader import (
+    CODE_LANGS,
+    IMAGE_MIMES,
+)
+from src.doc_analyzer_backend.components.preview_reader.utils import (
+    normalize_rows,
+    extract_zip_media,
+)
 
 
 # ──────────────────────────────────────────────────────────────

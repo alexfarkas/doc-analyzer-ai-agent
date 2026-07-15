@@ -7,14 +7,26 @@ from src.doc_analyzer_backend.api.models.files.files_list_response import (
     FilesListResponse,
     FilesPaginationResponse,
 )
-from src.doc_analyzer_backend.api.models.files.files_preview_response import FilesPreviewResponse
-from src.doc_analyzer_backend.api.models.upload.upload_file_response import UploadFileResponse
-from src.doc_analyzer_backend.api.models.upload.upload_from_url_request import UploadFromUrlRequest
-from src.doc_analyzer_backend.api.models.upload.upload_from_url_response import UploadFromUrlResponse
+from src.doc_analyzer_backend.api.models.files.files_preview_response import (
+    FilesPreviewResponse,
+)
+from src.doc_analyzer_backend.api.models.upload.upload_file_response import (
+    UploadFileResponse,
+)
+from src.doc_analyzer_backend.api.models.upload.upload_from_url_request import (
+    UploadFromUrlRequest,
+)
+from src.doc_analyzer_backend.api.models.upload.upload_from_url_response import (
+    UploadFromUrlResponse,
+)
 from src.doc_analyzer_backend.components.file_manager.file_manager import list_files
-from src.doc_analyzer_backend.components.preview_reader.preview_reader import file_preview
+from src.doc_analyzer_backend.components.preview_reader.preview_reader import (
+    file_preview,
+)
 from src.doc_analyzer_backend.components.uploader.file_uploader import upload_file
-from src.doc_analyzer_backend.components.uploader.web_content_uploader import upload_content_from_url
+from src.doc_analyzer_backend.components.uploader.web_content_uploader import (
+    upload_content_from_url,
+)
 from src.doc_analyzer_backend.config.app_config import app_config
 
 logger = logging.getLogger(__name__)

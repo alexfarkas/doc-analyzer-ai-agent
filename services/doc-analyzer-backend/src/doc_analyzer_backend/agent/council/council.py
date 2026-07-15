@@ -6,11 +6,17 @@ from db_repository import PromptRepository
 from rag_client import ChromaDBClientFactory
 
 from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.council.stages.corrector_stage import run_corrector_stage
+from src.doc_analyzer_backend.agent.council.stages.corrector_stage import (
+    run_corrector_stage,
+)
 from src.doc_analyzer_backend.agent.council.stages.exec_stage import run_exec_stage
 from src.doc_analyzer_backend.agent.council.stages.judge_stage import run_judge_stage
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
-from src.doc_analyzer_backend.agent.models.analysis.council_analysis_data import CouncilAnalysisData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    create_consumption_data,
+)
+from src.doc_analyzer_backend.agent.models.analysis.council_analysis_data import (
+    CouncilAnalysisData,
+)
 from src.doc_analyzer_backend.api.models.analisys.agent_data import AgentData
 from src.doc_analyzer_backend.config.llm_config import llm_config
 
@@ -103,7 +109,9 @@ class Council:
             progress_callback=progress_callback,
         )
 
-        logger.info(f"Updating consumption data by EXEC total data: {exec_consumption_data}")
+        logger.info(
+            f"Updating consumption data by EXEC total data: {exec_consumption_data}"
+        )
         council_consumption_data.update_by_data(data=exec_consumption_data)
 
         if self.correctors:
@@ -114,10 +122,14 @@ class Council:
                 progress_callback=progress_callback,
             )
 
-            logger.info(f"Updating consumption data by CORRECTORS total data: {corrector_consumption_data}")
+            logger.info(
+                f"Updating consumption data by CORRECTORS total data: {corrector_consumption_data}"
+            )
             council_consumption_data.update_by_data(data=corrector_consumption_data)
 
-            logger.info(f"Current council token usage: {council_consumption_data.token_usage}")
+            logger.info(
+                f"Current council token usage: {council_consumption_data.token_usage}"
+            )
             logger.info(f"Current council cost: {council_consumption_data.cost}")
 
         judgements = []
@@ -131,10 +143,14 @@ class Council:
                 progress_callback=progress_callback,
             )
 
-            logger.info(f"Updating consumption data by JUDGES total data: {judge_consumption_data}")
+            logger.info(
+                f"Updating consumption data by JUDGES total data: {judge_consumption_data}"
+            )
             council_consumption_data.update_by_data(data=judge_consumption_data)
 
-            logger.info(f"Current council token usage: {council_consumption_data.token_usage}")
+            logger.info(
+                f"Current council token usage: {council_consumption_data.token_usage}"
+            )
             logger.info(f"Current council cost: {council_consumption_data.cost}")
 
             judgements = judges_result.judgements

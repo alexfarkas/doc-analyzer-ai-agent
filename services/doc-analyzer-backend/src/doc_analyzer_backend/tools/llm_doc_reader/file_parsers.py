@@ -11,8 +11,14 @@ from docx import Document
 from openpyxl import load_workbook
 from pptx import Presentation
 
-from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import LLMDocReaderConfig
-from src.doc_analyzer_backend.tools.llm_doc_reader.consts import CODE_LANG_MAP, RE_EMPTY_LINES, RE_WHITESPACE
+from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import (
+    LLMDocReaderConfig,
+)
+from src.doc_analyzer_backend.tools.llm_doc_reader.consts import (
+    CODE_LANG_MAP,
+    RE_EMPTY_LINES,
+    RE_WHITESPACE,
+)
 from src.doc_analyzer_backend.tools.llm_doc_reader.utils import (
     assemble_markdown,
     table_to_md,

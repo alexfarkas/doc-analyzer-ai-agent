@@ -1,7 +1,10 @@
 import asyncio
 
 from src.doc_analyzer_backend.data.app_data import AppData
-from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage, create_token_usage
+from src.doc_analyzer_backend.agent.models.tokens.token_usage import (
+    TokenUsage,
+    create_token_usage,
+)
 
 
 class AppStateManager:

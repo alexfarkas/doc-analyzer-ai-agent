@@ -18,7 +18,7 @@ def calculate_cost(
     pricing = app_settings().pricing
 
     if provider == "ollama":
-        logger.info(f"Local model is using, no price")
+        logger.info("Local model is using, no price")
         return 0.0
 
     provider_pricing = pricing.providers[provider]
@@ -33,14 +33,18 @@ def calculate_cost(
 
     input_price = model_pricing.input
     output_price = model_pricing.output
-    logger.info(f"Pricing for model {provider}/{model} per 1M tokens: "
-                f"input: {input_price}, output: {output_price}")
+    logger.info(
+        f"Pricing for model {provider}/{model} per 1M tokens: "
+        f"input: {input_price}, output: {output_price}"
+    )
 
     total_input_price = token_usage.input_tokens * input_price / MILLION_TOKENS
     total_output_price = token_usage.output_tokens * output_price / MILLION_TOKENS
 
     cost = round(total_input_price + total_output_price, 2)
 
-    logger.info(f"Tokens cost: {cost} {currency} "
-                f"(input: {total_input_price}, output: {total_output_price})")
+    logger.info(
+        f"Tokens cost: {cost} {currency} "
+        f"(input: {total_input_price}, output: {total_output_price})"
+    )
     return cost

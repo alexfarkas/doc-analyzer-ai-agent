@@ -4,7 +4,10 @@ from functools import lru_cache
 import tiktoken
 from langchain_core.messages import BaseMessage
 
-from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage, create_token_usage
+from src.doc_analyzer_backend.agent.models.tokens.token_usage import (
+    TokenUsage,
+    create_token_usage,
+)
 
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,16 @@ import logging
 from agent_enums import Role, Assignment, AnswerStatus
 
 from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.messages_data.progress_data import start_event, stop_event
-from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.council_assignments.correction_data import CorrectionData
+from src.doc_analyzer_backend.agent.messages_data.progress_data import (
+    start_event,
+    stop_event,
+)
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
+    AgentAnalysisData,
+)
+from src.doc_analyzer_backend.agent.models.council_assignments.correction_data import (
+    CorrectionData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +63,9 @@ async def run_agent_queue(
             )
 
             async with elapsed_lock:
-                correction_data.consumption_data.update_by_data(data=result.consumption_data)
+                correction_data.consumption_data.update_by_data(
+                    data=result.consumption_data
+                )
 
             seq.answers.append(new_answer_item)
             await out_q.put((idx, new_answer_item.answer, seq))

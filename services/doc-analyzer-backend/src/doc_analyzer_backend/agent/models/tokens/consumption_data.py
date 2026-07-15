@@ -1,11 +1,14 @@
 from pydantic import BaseModel
 
-from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage, create_token_usage
+from src.doc_analyzer_backend.agent.models.tokens.token_usage import (
+    TokenUsage,
+    create_token_usage,
+)
 
 
 class ConsumptionData(BaseModel):
     token_usage: TokenUsage | None = None
-    elapsed: float= 0.0
+    elapsed: float = 0.0
     cost: float = 0.0
 
     def update_by_data(self, data: ConsumptionData):

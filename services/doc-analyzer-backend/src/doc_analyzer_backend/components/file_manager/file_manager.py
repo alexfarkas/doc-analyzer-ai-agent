@@ -1,7 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from src.doc_analyzer_backend.api.exceptions.exceptions import AgentFileInsteadOfDirectoryError
+from src.doc_analyzer_backend.api.exceptions.exceptions import (
+    AgentFileInsteadOfDirectoryError,
+)
 from src.doc_analyzer_backend.config.app_config import app_config
 
 

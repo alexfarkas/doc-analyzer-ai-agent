@@ -6,8 +6,12 @@ from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.judge.doc_judge import judge_document
 from src.doc_analyzer_backend.agent.council.judge.judge_runner import run_judges_async
 from src.doc_analyzer_backend.agent.council.judge.score_counter import count_scores
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
-from src.doc_analyzer_backend.agent.models.council_assignments.judgement_data import JudgementData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    create_consumption_data,
+)
+from src.doc_analyzer_backend.agent.models.council_assignments.judgement_data import (
+    JudgementData,
+)
 from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
 
 logger = logging.getLogger(__name__)
@@ -40,7 +44,8 @@ async def judge_result(
 
         judgements.append(
             "\n\n".join(
-                f"Судья {i + 1}:\n\n{j}" for i, j in enumerate(doc_judgement.answer_judgements)
+                f"Судья {i + 1}:\n\n{j}"
+                for i, j in enumerate(doc_judgement.answer_judgements)
             )
         )
         consumption_data.update_by_data(doc_judgement.consumption_data)

@@ -3,7 +3,9 @@ import asyncio
 from agent_enums import Role, Assignment
 
 from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
+    AgentAnalysisData,
+)
 from src.doc_analyzer_backend.agent.runners.council_agent_runner import run_agent
 
 

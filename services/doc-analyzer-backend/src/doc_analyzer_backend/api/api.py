@@ -9,8 +9,12 @@ from rag_client import ChromaDBClientFactory
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.council import Council
 from src.doc_analyzer_backend.api.routers.tokens_router import router as tokens_router
-from src.doc_analyzer_backend.api.routers.data_sources_router import router as data_sources_router
-from src.doc_analyzer_backend.api.routers.doc_analysis_router import router as doc_analysis_router
+from src.doc_analyzer_backend.api.routers.data_sources_router import (
+    router as data_sources_router,
+)
+from src.doc_analyzer_backend.api.routers.doc_analysis_router import (
+    router as doc_analysis_router,
+)
 from src.doc_analyzer_backend.api.routers.system_router import router as system_router
 from src.doc_analyzer_backend.api.config.logger_setup import setup_logging
 from src.doc_analyzer_backend.config.db_config import db_config

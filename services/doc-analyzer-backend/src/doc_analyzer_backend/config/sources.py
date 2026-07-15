@@ -24,9 +24,7 @@ class FileConfigSettingsSource(PydanticBaseSettingsSource):
             elif self.file_path.suffix == ".json":
                 return json.load(f)
             else:
-                raise ValueError(
-                    f"Unsupported file format: {self.file_path.suffix}"
-                )
+                raise ValueError(f"Unsupported file format: {self.file_path.suffix}")
 
     def __call__(self) -> dict[str, Any]:
         return self._load_file()

@@ -3,8 +3,13 @@ import logging
 from agent_enums import Role, Assignment
 
 from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.messages_data.progress_data import start_event, stop_event
-from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
+from src.doc_analyzer_backend.agent.messages_data.progress_data import (
+    start_event,
+    stop_event,
+)
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
+    AgentAnalysisData,
+)
 
 logger = logging.getLogger(__name__)
 

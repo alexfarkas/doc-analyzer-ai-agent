@@ -4,7 +4,9 @@ import uuid
 
 from fastapi import UploadFile, File
 
-from src.doc_analyzer_backend.api.exceptions.exceptions import AgentUnsupportedFileExtensionError
+from src.doc_analyzer_backend.api.exceptions.exceptions import (
+    AgentUnsupportedFileExtensionError,
+)
 from src.doc_analyzer_backend.config.app_config import app_config
 
 logger = logging.getLogger(__name__)

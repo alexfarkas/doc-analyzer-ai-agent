@@ -3,7 +3,9 @@ from pathlib import Path
 
 import pytesseract
 
-from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import LLMDocReaderConfig
+from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import (
+    LLMDocReaderConfig,
+)
 from src.doc_analyzer_backend.tools.llm_doc_reader.consts import RE_URL
 from src.doc_analyzer_backend.tools.llm_doc_reader.file_parsers import FileParser
 from src.doc_analyzer_backend.tools.llm_doc_reader.text_optimizer import TextOptimizer

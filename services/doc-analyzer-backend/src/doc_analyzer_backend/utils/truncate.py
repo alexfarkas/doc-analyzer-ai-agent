@@ -13,9 +13,7 @@ def truncate_value(
         return value
 
     if isinstance(value, dict):
-        return {
-            k: truncate_value(v, max_length, suffix) for k, v in value.items()
-        }
+        return {k: truncate_value(v, max_length, suffix) for k, v in value.items()}
 
     if isinstance(value, list):
         return [truncate_value(v, max_length, suffix) for v in value]
@@ -37,5 +35,5 @@ def format_data(
     truncated_data = truncate_value(data, max_length)
     try:
         return json.dumps(truncated_data, ensure_ascii=False, indent=indent)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return repr(truncated_data)

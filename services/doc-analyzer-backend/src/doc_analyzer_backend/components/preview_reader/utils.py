@@ -2,7 +2,9 @@ import base64
 import zipfile
 from pathlib import Path
 
-from src.doc_analyzer_backend.components.preview_reader.preview_reader import IMAGE_MIMES
+from src.doc_analyzer_backend.components.preview_reader.preview_reader import (
+    IMAGE_MIMES,
+)
 
 
 # ──────────────────────────────────────────────────────────────

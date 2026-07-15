@@ -4,8 +4,13 @@ from agent_enums import Role
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.judge.judge import judge_result
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import ConsumptionData, create_consumption_data
-from src.doc_analyzer_backend.agent.models.council_assignments.judgement_data import JudgementData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    ConsumptionData,
+    create_consumption_data,
+)
+from src.doc_analyzer_backend.agent.models.council_assignments.judgement_data import (
+    JudgementData,
+)
 from src.doc_analyzer_backend.agent.runners.stage_runner import run_stage
 from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
 

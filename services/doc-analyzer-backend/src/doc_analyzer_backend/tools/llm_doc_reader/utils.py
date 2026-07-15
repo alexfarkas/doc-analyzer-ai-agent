@@ -8,7 +8,9 @@ import pytesseract
 from PIL import Image
 
 from src.doc_analyzer_backend.tools.llm_doc_reader.consts import RE_WHITESPACE
-from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import LLMDocReaderConfig
+from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader_config import (
+    LLMDocReaderConfig,
+)
 
 
 # ──────────────────────────────────────────────────────────────

@@ -45,7 +45,9 @@ class AppSettings(BaseSettings):
         """
         pricing_filepath = app_config.pricing_filepath
         if not pricing_filepath:
-            logger.warning(f"Pricing config filepath not found in '{pricing_filepath}'.")
+            logger.warning(
+                f"Pricing config filepath not found in '{pricing_filepath}'."
+            )
             pricing_filepath = ""
 
         return (

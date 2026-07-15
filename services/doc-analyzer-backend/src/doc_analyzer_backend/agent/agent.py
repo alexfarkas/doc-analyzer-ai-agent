@@ -6,23 +6,41 @@ from agent_enums import Assignment, Mode, Role
 from db_repository import PromptRepository
 from rag_client import ChromaDBClientFactory
 
-from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import calculate_cost
-from src.doc_analyzer_backend.agent.consumption_counters.token_counter import calculate_tokens_usage, \
-    calculate_token_usage
-from src.doc_analyzer_backend.agent.context.conversation_storage import ConversationHistory
+from src.doc_analyzer_backend.agent.consumption_counters.cost_counter import (
+    calculate_cost,
+)
+from src.doc_analyzer_backend.agent.consumption_counters.token_counter import (
+    calculate_tokens_usage,
+    calculate_token_usage,
+)
+from src.doc_analyzer_backend.agent.context.conversation_storage import (
+    ConversationHistory,
+)
 from src.doc_analyzer_backend.agent.context.prompts_storage import get_prompts
-from src.doc_analyzer_backend.agent.context.rag_context import get_prompts_with_rag, get_user_prompt_with_rag
+from src.doc_analyzer_backend.agent.context.rag_context import (
+    get_prompts_with_rag,
+    get_user_prompt_with_rag,
+)
 from src.doc_analyzer_backend.agent.core.graph_builder import build_graph
 from src.doc_analyzer_backend.agent.core.llm_model_manager import LLMModelManager
-from src.doc_analyzer_backend.agent.messages_data.agent_data_builder import build_doc_analyse_data
+from src.doc_analyzer_backend.agent.messages_data.agent_data_builder import (
+    build_doc_analyse_data,
+)
 from src.doc_analyzer_backend.agent.messages_data.chat_utils import (
     prepare_chat_messages,
     stream_llm_response,
     finalize_chat_stream,
 )
-from src.doc_analyzer_backend.agent.messages_data.messages_utils import build_messages, extract_final_answer
-from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import AgentAnalysisData
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import create_consumption_data
+from src.doc_analyzer_backend.agent.messages_data.messages_utils import (
+    build_messages,
+    extract_final_answer,
+)
+from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
+    AgentAnalysisData,
+)
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    create_consumption_data,
+)
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
 from src.doc_analyzer_backend.tools.tools import init_tools
@@ -124,7 +142,9 @@ class Agent:
         self._history.save_ai_message(final_msg)
 
         elapsed = time.perf_counter() - start
-        logger.info(f"Agent {self.agent_id}: doc analysis is completed in {elapsed} seconds")
+        logger.info(
+            f"Agent {self.agent_id}: doc analysis is completed in {elapsed} seconds"
+        )
 
         token_usage = calculate_token_usage(
             messages=result["messages"],

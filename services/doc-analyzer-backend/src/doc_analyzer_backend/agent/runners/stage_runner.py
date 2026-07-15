@@ -1,7 +1,9 @@
 import logging
 from typing import Callable, Awaitable, Any
 
-from src.doc_analyzer_backend.agent.models.tokens.consumption_data import ConsumptionData
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
+    ConsumptionData,
+)
 
 logger = logging.getLogger(__name__)
 
