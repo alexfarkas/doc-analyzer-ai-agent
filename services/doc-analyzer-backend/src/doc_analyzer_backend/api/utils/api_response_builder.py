@@ -92,7 +92,7 @@ async def build_clarify_chat_result(
         consumption_data=result.consumption_data,
     )
     return response_model(
-        result=ResultData(answer_seq=result.answer_seq),
+        result=ResultData(answer_seq=AnswerSeq(answers=[result.answer_item])),
         token_usage=result.consumption_data.token_usage,
         total_token_usage=total_token_usage,
         elapsed=result.consumption_data.elapsed,
