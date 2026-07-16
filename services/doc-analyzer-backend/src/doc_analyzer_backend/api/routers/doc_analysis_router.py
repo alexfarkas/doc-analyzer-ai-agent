@@ -189,7 +189,7 @@ async def api_chat_stream(
 ):
     async def generate():
         try:
-            async for chunk in agent.chat_stream(
+            async for chunk in await agent.chat_stream(
                 user_message=request.user_message,
                 model=request.model,
             ):
