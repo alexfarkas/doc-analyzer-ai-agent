@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 async def update_total_consumption(
     consumption_data: ConsumptionData,
 ) -> tuple[TokenUsage, float]:
-    logger.info(f"Updating total consumption data with: {consumption_data}")
+    logger.info(f"Updating total consumption in app data with: {consumption_data}")
 
     await app_state.add_token_usage(consumption_data.token_usage)
     await app_state.add_cost(consumption_data.cost)
