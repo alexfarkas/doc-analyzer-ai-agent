@@ -27,7 +27,7 @@ async def agent_chat_stream(
     start = time.perf_counter()
     logger.info(f"Agent {agent_id}: chat stream is starting...")
 
-    logger.debug(f"History system prompt{history.system_prompt}")
+    logger.debug(f"History system prompt: {history.system_prompt}")
 
     messages = await prepare_chat_messages(
         user_message=user_message,

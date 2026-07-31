@@ -45,12 +45,14 @@ async def agent_analyze_doc(
     )
 
     history.clear()
-    history.save(prompts)
 
     if chromadb_client_factory and rag_collections_names:
         prompts = await get_prompts_with_rag(
             prompts, chromadb_client_factory, rag_collections_names
         )
+
+    history.save(prompts)
+
     messages = build_messages(prompts, Mode.ANALYSIS)
 
     estimated_tokens = calculate_tokens_usage(messages, model)

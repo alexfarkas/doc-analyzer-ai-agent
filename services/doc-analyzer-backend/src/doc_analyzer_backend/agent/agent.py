@@ -7,16 +7,16 @@ from rag_client import ChromaDBClientFactory
 
 from src.doc_analyzer_backend.agent.agent_ai_invocation.chatter import agent_chat
 from src.doc_analyzer_backend.agent.agent_ai_invocation.clarificator import agent_clarify
+from src.doc_analyzer_backend.agent.agent_ai_invocation.doc_analyzer import agent_analyze_doc
+from src.doc_analyzer_backend.agent.agent_ai_invocation.stream_chatter import agent_chat_stream
 from src.doc_analyzer_backend.agent.context.conversation_storage import (
     ConversationHistory,
 )
 from src.doc_analyzer_backend.agent.core.graph_builder import build_graph
 from src.doc_analyzer_backend.agent.core.llm_model_manager import LLMModelManager
-from src.doc_analyzer_backend.agent.agent_ai_invocation.doc_analyzer import agent_analyze_doc
 from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
     AgentAnalysisData,
 )
-from src.doc_analyzer_backend.agent.agent_ai_invocation.stream_chatter import agent_chat_stream
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
 from src.doc_analyzer_backend.tools.tools import init_tools
@@ -104,6 +104,7 @@ class Agent:
         self,
         ai_answer: str,
         user_message: str,
+        answer_index: int,
         model: str | None = None,
     ) -> AgentAnalysisData:
         await self.setup_model(model)
@@ -113,6 +114,7 @@ class Agent:
             app=self.app,
             ai_answer=ai_answer,
             user_message=user_message,
+            answer_index=answer_index,
             provider=self._llm_model_manager.current_provider,
             model=self._llm_model_manager.current_model,
             history=self._history,

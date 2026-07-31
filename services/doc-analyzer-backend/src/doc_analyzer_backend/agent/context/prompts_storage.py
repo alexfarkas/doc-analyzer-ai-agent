@@ -118,7 +118,7 @@ async def _get_local_prompts_clarification(
 async def _get_local_prompts_chat(
     role: Role, assignment: Assignment, **kwargs
 ) -> tuple[str, str]:
-    return (system_prompt_chat_any_any(**kwargs), user_prompt_chat_any_any(**kwargs))
+    return system_prompt_chat_any_any(**kwargs), user_prompt_chat_any_any(**kwargs)
 
 
 async def _get_local_prompts_summary_analyst(

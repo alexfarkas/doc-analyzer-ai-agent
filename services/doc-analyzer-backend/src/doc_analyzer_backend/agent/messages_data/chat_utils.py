@@ -40,7 +40,7 @@ async def prepare_chat_messages(
     rag_collections_names: list[str],
 ) -> list[BaseMessage]:
     init_user_prompt = user_message
-    logger.debug(f"User prompt in chat:\n{init_user_prompt}")
+    logger.debug(f"User prompt in chat: {init_user_prompt}")
 
     if chromadb_client_factory and rag_collections_names:
         init_user_prompt = await get_user_prompt_with_rag(
@@ -49,7 +49,7 @@ async def prepare_chat_messages(
             chromadb_client_factory,
             rag_collections_names,
         )
-    logger.debug(f"User prompt with RAG in chat:\n{init_user_prompt}")
+    logger.debug(f"User prompt with RAG in chat: {init_user_prompt}")
 
     prompts = await get_prompts(
         mode=Mode.CHAT,
