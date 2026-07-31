@@ -83,7 +83,7 @@ def user_prompt_analysis_teacher_judge(**kwargs) -> str:
 def user_prompt_clarification_any_any(**kwargs):
     return DEFAULT_USER_PROMPTS_CLARIFICATION_ANY_ANY[0]["content"].format(
         init_user_prompt=kwargs.get("init_user_prompt", None),
-        ai_answer=kwargs.get("ai_answer", None),
+        clarifying_answer=kwargs.get("clarifying_answer", None),
     )
 
 
