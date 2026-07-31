@@ -30,6 +30,7 @@ class LLMFactory:
                     model=f"{provider}/{model}",
                     base_url=llm_config.base_url,
                     api_key=llm_config.api_key,
+                    temperature=llm_config.temperature,
                     timeout=300.0,
                     max_retries=3,
                 )
