@@ -16,6 +16,7 @@ from src.doc_analyzer_backend.api.routers.doc_analysis_router import (
     router as doc_analysis_router,
 )
 from src.doc_analyzer_backend.api.routers.system_router import router as system_router
+from src.doc_analyzer_backend.api.routers.user_session_router import router as user_session_router
 from src.doc_analyzer_backend.api.config.logger_setup import setup_logging
 from src.doc_analyzer_backend.config.db_config import db_config
 from src.doc_analyzer_backend.config.llm_config import llm_config
@@ -84,6 +85,7 @@ app = FastAPI(
 )
 
 app.include_router(system_router, tags=["System"])
+app.include_router(user_session_router, tags=["User Session"])
 app.include_router(doc_analysis_router, tags=["Doc Analysis"])
 app.include_router(data_sources_router, tags=["Data Sources"])
 app.include_router(tokens_router, tags=["Tokens Data"])
