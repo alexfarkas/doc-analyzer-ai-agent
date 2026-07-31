@@ -7,6 +7,7 @@ from starlette.responses import StreamingResponse
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.council import Council
+from src.doc_analyzer_backend.agent.runners.doc_analyze_runner import run_doc_analysis
 from src.doc_analyzer_backend.api.dependencies.dependencies import (
     get_agent,
     get_council,
@@ -31,7 +32,6 @@ from src.doc_analyzer_backend.api.models.analisys.clarify_doc_response import (
 from src.doc_analyzer_backend.api.models.analisys.history_response import (
     HistoryResponse,
 )
-from src.doc_analyzer_backend.agent.runners.doc_analyze_runner import run_doc_analysis
 from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_clarify_chat_result,
     build_agent_doc_analysis_result,
@@ -163,6 +163,7 @@ async def api_clarify_doc(
         return await agent.clarify(
             ai_answer=request.ai_answer,
             user_message=request.user_message,
+            answer_index=request.agent_index,
             model=request.model,
         )
 
