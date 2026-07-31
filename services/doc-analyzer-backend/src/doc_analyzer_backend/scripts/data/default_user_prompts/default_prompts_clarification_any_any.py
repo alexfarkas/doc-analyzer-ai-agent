@@ -12,7 +12,7 @@ DEFAULT_USER_PROMPTS_CLARIFICATION_ANY_ANY = [
         "content": textwrap.dedent(
             """
             Первоначальный текст выглядит так:
-            {ai_answer}
+            {clarifying_answer}
             
             Задача: переработай первоначальный текст в соответствии с тем, что описано в сообщении:
             {init_user_prompt} 

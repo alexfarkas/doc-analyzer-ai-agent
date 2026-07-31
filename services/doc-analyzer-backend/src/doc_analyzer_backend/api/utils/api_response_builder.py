@@ -88,6 +88,7 @@ async def build_clarify_chat_result(
     response_model,
 ):
     result = await agent_call()
+
     total_token_usage, total_cost = await update_total_consumption(
         consumption_data=result.consumption_data,
     )
