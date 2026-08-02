@@ -10,7 +10,7 @@ class LLMConfig(BaseSettings):
         default=None, description="LLM API key", exclude=True
     )
     temperature: float = Field(
-        default=0.1, ge=0.0, le=2.0, description="LLM generation temperature"
+        default=1.0, ge=0.0, le=2.0, description="LLM generation temperature"
     )
 
     cost_calculation_provider: str | None = Field(

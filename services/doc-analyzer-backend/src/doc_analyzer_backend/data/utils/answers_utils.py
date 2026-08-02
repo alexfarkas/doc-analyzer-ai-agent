@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 async def update_answer_item(answer_item: AnswerItem):
     logger.info("Updating answer item in app data")
-    await app_state.set_answer_seqs(answer_item)
+    await app_state.set_answer_seqs(answer_item=answer_item)
 
 
 async def update_answer_seqs(answer_seqs: list[AnswerSeq]):
     logger.info("Updating answer seqs in app data")
-    await app_state.set_answer_seqs(answer_seqs)
+    await app_state.set_answer_seqs(answer_seqs=answer_seqs)
