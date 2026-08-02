@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.api.config.backend_config import backend_config
-from src.doc_analyzer_backend.api.dependencies.dependencies import get_agent
+from src.doc_analyzer_backend.api.dependencies.dependencies import get_agent, get_user_session
 from src.doc_analyzer_backend.api.models.config.config_response import ConfigResponse
 from src.doc_analyzer_backend.api.models.status.health_check_response import (
     HealthCheckResponse,
@@ -16,6 +16,7 @@ from src.doc_analyzer_backend.api.models.status.status_response import (
 )
 from src.doc_analyzer_backend.config.llm_config import llm_config
 from src.doc_analyzer_backend.config.rag_config import rag_config
+from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +24,20 @@ router = APIRouter()
 
 
 @router.get("/health", response_model=HealthCheckResponse)
-async def api_health_check(agent: Agent = Depends(get_agent)):
+async def api_health_check(
+    agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
+):
     """Проверка готовности сервиса"""
     status = "OK" if agent is not None else "Agent is not initialized"
     return HealthCheckResponse(status=status, model=llm_config.model)
 
 
 @router.get("/status", response_model=StatusResponse, response_model_exclude_none=True)
-async def api_status(agent: Agent = Depends(get_agent)):
+async def api_status(
+    agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
+):
     tools_data = []
     for tool in agent.tools:
         tools_data.append(
@@ -58,5 +65,7 @@ async def api_status(agent: Agent = Depends(get_agent)):
 
 
 @router.get("/config", response_model=ConfigResponse)
-async def api_get_config():
+async def api_get_config(
+    user: UserSession = Depends(get_user_session),
+):
     return backend_config

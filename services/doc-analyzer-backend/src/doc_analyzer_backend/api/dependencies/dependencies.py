@@ -40,7 +40,7 @@ def _set_cookie(response: Response, params: CookieParams, value: str):
         key=params.key,
         value=value,
         httponly=True,
-        secure=True,
+        secure=False,
         samesite="lax",
         max_age=params.max_age,
         path=params.path,

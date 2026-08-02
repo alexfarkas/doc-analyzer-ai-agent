@@ -1,8 +1,9 @@
 import logging
 from typing import Literal
 
-from fastapi import UploadFile, File, Query, APIRouter
+from fastapi import UploadFile, File, Query, APIRouter, Depends
 
+from src.doc_analyzer_backend.api.dependencies.dependencies import get_user_session
 from src.doc_analyzer_backend.api.models.files.files_list_response import (
     FilesListResponse,
     FilesPaginationResponse,
@@ -28,6 +29,7 @@ from src.doc_analyzer_backend.components.uploader.web_content_uploader import (
     upload_content_from_url,
 )
 from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +37,10 @@ router = APIRouter()
 
 
 @router.post("/upload/file", response_model=UploadFileResponse)
-async def api_upload_file(file: UploadFile = File(...)):
+async def api_upload_file(
+    file: UploadFile = File(...),
+    user: UserSession = Depends(get_user_session),
+):
     result = await upload_file(file)
     return UploadFileResponse(
         file_path=result["file_path"], filename=result["filename"]
@@ -43,7 +48,10 @@ async def api_upload_file(file: UploadFile = File(...)):
 
 
 @router.post("/upload/from-url", response_model=UploadFromUrlResponse)
-async def api_upload_from_url(request: UploadFromUrlRequest):
+async def api_upload_from_url(
+    request: UploadFromUrlRequest,
+    user: UserSession = Depends(get_user_session),
+):
     text = upload_content_from_url(request.url)
     return UploadFromUrlResponse(url=request.url, html=text)
 
@@ -54,6 +62,7 @@ async def api_files_preview(
     max_size: int = Query(
         app_config.max_file_preview_size, description="Max file size"
     ),
+    user: UserSession = Depends(get_user_session),
 ):
     result = file_preview(file_path, max_size)
     return FilesPreviewResponse(
@@ -74,6 +83,7 @@ async def api_files_list(
     filter_ext: str | None = Query(None, description="Filter files by extension"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Files on page"),
+    user: UserSession = Depends(get_user_session),
 ):
     docs_dir = app_config.docs_dir
 

@@ -10,7 +10,7 @@ from src.doc_analyzer_backend.agent.council.council import Council
 from src.doc_analyzer_backend.agent.runners.doc_analyze_runner import run_doc_analysis
 from src.doc_analyzer_backend.api.dependencies.dependencies import (
     get_agent,
-    get_council,
+    get_council, get_user_session,
 )
 from src.doc_analyzer_backend.api.exceptions.exceptions import AgentsListIsEmptyError
 from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import (
@@ -41,6 +41,7 @@ from src.doc_analyzer_backend.api.utils.sse_utils import stream_with_queue
 from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
     update_total_consumption,
 )
+from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ async def api_doc_analyze(
     request: AnalyzeDocRequest,
     agent: Agent = Depends(get_agent),
     council: Council = Depends(get_council),
+    user: UserSession = Depends(get_user_session),
 ):
     if len(request.agents) == 0:
         raise AgentsListIsEmptyError()
@@ -104,6 +106,7 @@ async def api_doc_analyze_stream(
     request: AnalyzeDocRequest,
     agent: Agent = Depends(get_agent),
     council: Council = Depends(get_council),
+    user: UserSession = Depends(get_user_session),
 ):
     event_queue = asyncio.Queue()
 
@@ -158,6 +161,7 @@ async def api_doc_analyze_stream(
 async def api_clarify_doc(
     request: ClarifyDocRequest,
     agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
 ):
     async def call_agent():
         return await agent.clarify(
@@ -187,6 +191,7 @@ async def api_chat(
 async def api_chat_stream(
     request: ChatDocRequest,
     agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
 ):
     async def generate():
         try:
@@ -218,5 +223,8 @@ async def api_chat_stream(
 
 
 @router.post("/doc/history", response_model=HistoryResponse)
-async def api_doc_history(agent: Agent = Depends(get_agent)):
+async def api_doc_history(
+    agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
+):
     return HistoryResponse(history=await agent.get_history())
