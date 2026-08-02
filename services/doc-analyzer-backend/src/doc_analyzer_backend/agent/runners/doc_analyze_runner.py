@@ -1,7 +1,5 @@
 from agent_enums import Assignment
 
-from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.council.council import Council
 from src.doc_analyzer_backend.agent.messages_data.progress_data import (
     start_event,
     stop_event,
@@ -17,45 +15,41 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_agent_doc_analysis_result,
     build_council_doc_analysis_result,
 )
-from src.doc_analyzer_backend.data.utils.answers_utils import update_answer_item, update_answer_seqs
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
-    update_total_consumption,
-)
+from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 
 async def run_doc_analysis(
     request: AnalyzeDocRequest,
-    agent: Agent,
-    council: Council,
+    user: UserSession,
     progress_callback=None,
 ) -> AnalyzeDocResponse:
     if len(request.agents) == 0:
         raise AgentsListIsEmptyError()
 
     if len(request.agents) == 1:
-        return await _agent_doc_analysis(request, agent, progress_callback)
+        return await _agent_doc_analysis(request, user, progress_callback)
 
-    return await _council_doc_analysis(request, council, progress_callback)
+    return await _council_doc_analysis(request, user, progress_callback)
 
 
 async def _agent_doc_analysis(
     request: AnalyzeDocRequest,
-    agent: Agent,
+    user: UserSession,
     progress_callback,
 ) -> AnalyzeDocResponse:
     if progress_callback:
         await progress_callback(start_event(1, Assignment.EXEC))
 
     try:
-        result = await agent.analyze_doc(
+        result = await user.agent.analyze_doc(
             resources=request.resources,
             role=request.role,
             model=request.agents[0].model,
             limit=request.limit,
         )
 
-        await update_answer_item(result.answer_item)
-        total_token_usage, total_cost = await update_total_consumption(
+        await user.data.set_answer_seqs(answer_item=result.answer_item)
+        total_token_usage, total_cost = await user.data.update_total_consumption(
             consumption_data=result.consumption_data,
         )
 
@@ -74,20 +68,20 @@ async def _agent_doc_analysis(
 
 async def _council_doc_analysis(
     request: AnalyzeDocRequest,
-    council: Council,
+    user: UserSession,
     progress_callback,
 ) -> AnalyzeDocResponse:
-    await council.create_council(request.agents)
+    await user.council.create_council(request.agents)
 
-    result = await council.analyze_doc(
+    result = await user.council.analyze_doc(
         resources=request.resources,
         role=request.role,
         limit=request.limit,
         progress_callback=progress_callback,
     )
 
-    await update_answer_seqs(result.answer_seqs)
-    total_token_usage, total_cost = await update_total_consumption(
+    await user.data.set_answer_seqs(answer_seqs=result.answer_seqs)
+    total_token_usage, total_cost = await user.data.update_total_consumption(
         consumption_data=result.consumption_data,
     )
 

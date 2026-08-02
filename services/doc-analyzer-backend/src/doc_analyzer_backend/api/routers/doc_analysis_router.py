@@ -5,13 +5,8 @@ import logging
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
-from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.council.council import Council
 from src.doc_analyzer_backend.agent.runners.doc_analyze_runner import run_doc_analysis
-from src.doc_analyzer_backend.api.dependencies.dependencies import (
-    get_agent,
-    get_council, get_user_session,
-)
+from src.doc_analyzer_backend.api.dependencies.dependencies import get_user_session
 from src.doc_analyzer_backend.api.exceptions.exceptions import AgentsListIsEmptyError
 from src.doc_analyzer_backend.api.models.analisys.analyze_doc_request import (
     AnalyzeDocRequest,
@@ -38,9 +33,6 @@ from src.doc_analyzer_backend.api.utils.api_response_builder import (
     build_council_doc_analysis_result,
 )
 from src.doc_analyzer_backend.api.utils.sse_utils import stream_with_queue
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
-    update_total_consumption,
-)
 from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
@@ -53,21 +45,19 @@ router = APIRouter()
 )
 async def api_doc_analyze(
     request: AnalyzeDocRequest,
-    agent: Agent = Depends(get_agent),
-    council: Council = Depends(get_council),
     user: UserSession = Depends(get_user_session),
 ):
     if len(request.agents) == 0:
         raise AgentsListIsEmptyError()
 
     if len(request.agents) == 1:
-        result = await agent.analyze_doc(
+        result = await user.agent.analyze_doc(
             resources=request.resources,
             role=request.role,
             model=request.agents[0].model,
         )
 
-        total_token_usage, total_cost = await update_total_consumption(
+        total_token_usage, total_cost = await user.data.update_total_consumption(
             consumption_data=result.consumption_data,
         )
 
@@ -79,10 +69,12 @@ async def api_doc_analyze(
             total_cost=total_cost,
         )
 
+    council = user.council
+
     await council.create_council(request.agents)
     result = await council.analyze_doc(resources=request.resources, role=request.role)
 
-    total_token_usage, total_cost = await update_total_consumption(
+    total_token_usage, total_cost = await user.data.update_total_consumption(
         consumption_data=result.consumption_data,
     )
 
@@ -104,8 +96,6 @@ async def api_doc_analyze(
 )
 async def api_doc_analyze_stream(
     request: AnalyzeDocRequest,
-    agent: Agent = Depends(get_agent),
-    council: Council = Depends(get_council),
     user: UserSession = Depends(get_user_session),
 ):
     event_queue = asyncio.Queue()
@@ -123,8 +113,7 @@ async def api_doc_analyze_stream(
         try:
             final_result = await run_doc_analysis(
                 request=request,
-                agent=agent,
-                council=council,
+                user=user,
                 progress_callback=progress_callback,
             )
             await event_queue.put(
@@ -160,18 +149,17 @@ async def api_doc_analyze_stream(
 )
 async def api_clarify_doc(
     request: ClarifyDocRequest,
-    agent: Agent = Depends(get_agent),
     user: UserSession = Depends(get_user_session),
 ):
     async def call_agent():
-        return await agent.clarify(
+        return await user.agent.clarify(
+            data=user.data,
             ai_answer=request.ai_answer,
             user_message=request.user_message,
             answer_index=request.agent_index,
             model=request.model,
         )
-
-    return await build_clarify_chat_result(call_agent, ClarifyDocResponse)
+    return await build_clarify_chat_result(user, call_agent, ClarifyDocResponse)
 
 
 @router.post(
@@ -179,23 +167,22 @@ async def api_clarify_doc(
 )
 async def api_chat(
     request: ChatDocRequest,
-    agent: Agent = Depends(get_agent),
+    user: UserSession = Depends(get_user_session),
 ):
     async def call_agent():
-        return await agent.chat(user_message=request.user_message, model=request.model)
-
-    return await build_clarify_chat_result(call_agent, ChatDocResponse)
+        return await user.agent.chat(user_message=request.user_message, model=request.model)
+    return await build_clarify_chat_result(user, call_agent, ChatDocResponse)
 
 
 @router.post("/doc/chat/stream")
 async def api_chat_stream(
     request: ChatDocRequest,
-    agent: Agent = Depends(get_agent),
     user: UserSession = Depends(get_user_session),
 ):
     async def generate():
         try:
-            async for chunk in await agent.chat_stream(
+            async for chunk in await user.agent.chat_stream(
+                data=user. data,
                 user_message=request.user_message,
                 model=request.model,
             ):
@@ -224,7 +211,6 @@ async def api_chat_stream(
 
 @router.post("/doc/history", response_model=HistoryResponse)
 async def api_doc_history(
-    agent: Agent = Depends(get_agent),
     user: UserSession = Depends(get_user_session),
 ):
-    return HistoryResponse(history=await agent.get_history())
+    return HistoryResponse(history=await user.agent.get_history())

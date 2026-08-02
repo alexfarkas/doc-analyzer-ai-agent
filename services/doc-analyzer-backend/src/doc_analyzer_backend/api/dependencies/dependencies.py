@@ -1,24 +1,12 @@
+import logging
 from dataclasses import dataclass
 
-from fastapi import Request, Response, Cookie
+from fastapi import Response, Cookie
 
-from src.doc_analyzer_backend.agent.agent import Agent
-from src.doc_analyzer_backend.agent.council.council import Council
-from src.doc_analyzer_backend.data.app_state_manager import AppStateManager, app_state
 from src.doc_analyzer_backend.session.data.user_session import UserSession
 from src.doc_analyzer_backend.session.user_manager import user_manager
 
-
-def get_agent(request: Request) -> Agent:
-    return request.app.state.agent
-
-
-def get_council(request: Request) -> Council:
-    return request.app.state.council
-
-
-def get_app_state() -> AppStateManager:
-    return app_state
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -47,14 +35,18 @@ def _set_cookie(response: Response, params: CookieParams, value: str):
     )
 
 
-def get_user_session(
+async def get_user_session(
     response: Response,
     session_id: str | None = Cookie(None, alias="session_id"),
 ) -> UserSession:
+    logger.info(f"Getting user session id: {session_id}")
     if session_id:
         session = user_manager.get_session(session_id=session_id)
         if session:
+            logger.info("Using existing user session")
             return session
-    session = user_manager.create_session()
-    _set_cookie(response=response, params=SESSION_COOKIE, value=session_id)
+    logger.info(f"Creating user session")
+    session = await user_manager.create_session()
+    _set_cookie(response=response, params=SESSION_COOKIE, value=session.session_id)
+    logger.info(f"New user session created with session_id: {session.session_id}")
     return session

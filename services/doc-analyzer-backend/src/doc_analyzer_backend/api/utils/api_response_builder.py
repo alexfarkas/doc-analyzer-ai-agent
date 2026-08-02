@@ -16,9 +16,7 @@ from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
 from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
 from src.doc_analyzer_backend.api.models.analisys.result_data import ResultData
 from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
-    update_total_consumption,
-)
+from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 
 async def build_agent_doc_analysis_result(
@@ -84,12 +82,13 @@ async def build_council_doc_analysis_result(
 
 
 async def build_clarify_chat_result(
+    user: UserSession,
     agent_call: Callable[[], Awaitable[AgentAnalysisData]],
     response_model,
 ):
     result = await agent_call()
 
-    total_token_usage, total_cost = await update_total_consumption(
+    total_token_usage, total_cost = await user.data.update_total_consumption(
         consumption_data=result.consumption_data,
     )
     return response_model(

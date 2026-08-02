@@ -2,9 +2,8 @@ import logging
 
 from fastapi import APIRouter, Depends
 
-from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.api.config.backend_config import backend_config
-from src.doc_analyzer_backend.api.dependencies.dependencies import get_agent, get_user_session
+from src.doc_analyzer_backend.api.dependencies.dependencies import get_user_session
 from src.doc_analyzer_backend.api.models.config.config_response import ConfigResponse
 from src.doc_analyzer_backend.api.models.status.health_check_response import (
     HealthCheckResponse,
@@ -24,22 +23,16 @@ router = APIRouter()
 
 
 @router.get("/health", response_model=HealthCheckResponse)
-async def api_health_check(
-    agent: Agent = Depends(get_agent),
-    user: UserSession = Depends(get_user_session),
-):
+async def api_health_check(user: UserSession = Depends(get_user_session)):
     """Проверка готовности сервиса"""
-    status = "OK" if agent is not None else "Agent is not initialized"
+    status = "OK" if user.agent is not None else "Agent is not initialized"
     return HealthCheckResponse(status=status, model=llm_config.model)
 
 
 @router.get("/status", response_model=StatusResponse, response_model_exclude_none=True)
-async def api_status(
-    agent: Agent = Depends(get_agent),
-    user: UserSession = Depends(get_user_session),
-):
+async def api_status(user: UserSession = Depends(get_user_session)):
     tools_data = []
-    for tool in agent.tools:
+    for tool in user.agent.tools:
         tools_data.append(
             ToolData(
                 name=getattr(tool, "name", "unknown"),
@@ -65,7 +58,5 @@ async def api_status(
 
 
 @router.get("/config", response_model=ConfigResponse)
-async def api_get_config(
-    user: UserSession = Depends(get_user_session),
-):
+async def api_get_config(user: UserSession = Depends(get_user_session)):
     return backend_config

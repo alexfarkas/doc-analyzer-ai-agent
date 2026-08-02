@@ -19,6 +19,7 @@ from src.doc_analyzer_backend.agent.models.analysis.agent_analysis_data import (
 )
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.llm.llm_factory import LLMFactory
+from src.doc_analyzer_backend.session.data.user_data import UserData
 from src.doc_analyzer_backend.tools.tools import init_tools
 
 logger = logging.getLogger(__name__)
@@ -102,6 +103,7 @@ class Agent:
 
     async def clarify(
         self,
+        data: UserData,
         ai_answer: str,
         user_message: str,
         answer_index: int,
@@ -110,6 +112,7 @@ class Agent:
         await self.setup_model(model)
 
         return await agent_clarify(
+            data=data,
             agent_id=self.agent_id,
             app=self.app,
             ai_answer=ai_answer,
@@ -142,12 +145,14 @@ class Agent:
 
     async def chat_stream(
         self,
+        data: UserData,
         user_message: str,
         model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         await self.setup_model(model)
 
         return agent_chat_stream(
+            data=data,
             agent_id=self.agent_id,
             user_message=user_message,
             llm=self.llm,

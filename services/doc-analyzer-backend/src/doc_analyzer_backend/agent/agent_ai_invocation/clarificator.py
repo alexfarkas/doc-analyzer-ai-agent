@@ -11,12 +11,13 @@ from src.doc_analyzer_backend.agent.context.prompts_storage import get_prompts
 from src.doc_analyzer_backend.agent.context.rag_context import get_prompts_with_rag
 from src.doc_analyzer_backend.agent.messages_data.agent_data_builder import build_doc_analyse_data
 from src.doc_analyzer_backend.agent.messages_data.messages_utils import build_messages
-from src.doc_analyzer_backend.data.app_state_manager import app_state
+from src.doc_analyzer_backend.session.data.user_data import UserData
 
 logger = logging.getLogger(__name__)
 
 
 async def agent_clarify(
+    data: UserData,
     agent_id: int,
     app: CompiledStateGraph,
     ai_answer: str,
@@ -39,7 +40,7 @@ async def agent_clarify(
             rag_collections_names,
         )
 
-    answer_seq = await app_state.get_answer_seq(answer_index)
+    answer_seq = data.get_answer_seq(answer_index)
     clarifying_answer = next((a for a in answer_seq.answers if a.status == AnswerStatus.FINAL), None)
     logger.debug(f"Final AI answer to clarify: {clarifying_answer}")
 

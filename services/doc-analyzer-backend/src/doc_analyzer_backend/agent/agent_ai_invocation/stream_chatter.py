@@ -9,11 +9,13 @@ from rag_client import ChromaDBClientFactory
 from src.doc_analyzer_backend.agent.context.conversation_storage import ConversationHistory
 from src.doc_analyzer_backend.agent.messages_data.chat_utils import prepare_chat_messages, stream_llm_response, \
     finalize_chat_stream
+from src.doc_analyzer_backend.session.data.user_data import UserData
 
 logger = logging.getLogger(__name__)
 
 
 async def agent_chat_stream(
+    data: UserData,
     agent_id: int,
     user_message: str,
     llm: BaseChatModel,
@@ -55,6 +57,7 @@ async def agent_chat_stream(
         full_answer = "".join(accumulated_content)
         if full_answer:
             finalize_chat_stream(
+                data=data,
                 user_message=user_message,
                 full_answer=full_answer,
                 messages=messages,

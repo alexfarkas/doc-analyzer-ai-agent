@@ -2,6 +2,7 @@ import asyncio
 import logging
 from dataclasses import field, dataclass
 
+from src.doc_analyzer_backend.agent.models.tokens.consumption_data import ConsumptionData
 from src.doc_analyzer_backend.agent.models.tokens.token_usage import TokenUsage, create_token_usage
 from src.doc_analyzer_backend.api.models.analisys.answer_item import AnswerItem
 from src.doc_analyzer_backend.api.models.analisys.answer_seq import AnswerSeq
@@ -74,3 +75,20 @@ class UserData:
     async def clear_cost(self):
         async with self._lock:
             self.cost = 0.0
+
+    async def update_total_consumption(
+        self,
+        consumption_data: ConsumptionData,
+    ) -> tuple[TokenUsage, float]:
+        logger.info(f"Updating user total consumption with: {consumption_data}")
+
+        await self.add_token_usage(consumption_data.token_usage)
+        await self.add_cost(consumption_data.cost)
+
+        total_token_usage = self.get_token_usage()
+        total_cost = self.get_cost()
+
+        logger.info(f"Total token usage: {total_token_usage}")
+        logger.info(f"Total cost: {total_cost}")
+
+        return total_token_usage, total_cost

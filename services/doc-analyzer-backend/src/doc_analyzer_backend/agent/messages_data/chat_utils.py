@@ -25,9 +25,7 @@ from src.doc_analyzer_backend.agent.models.tokens.consumption_data import (
     create_consumption_data,
 )
 from src.doc_analyzer_backend.agent.models.tokens.token_usage import create_token_usage
-from src.doc_analyzer_backend.data.utils.total_tokens_cost_utils import (
-    update_total_consumption,
-)
+from src.doc_analyzer_backend.session.data.user_data import UserData
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +83,7 @@ def _extract_chunk_content(chunk: AIMessageChunk) -> str | None:
 
 
 async def finalize_chat_stream(
+    data: UserData,
     user_message: str,
     full_answer: str,
     messages: list[BaseMessage],
@@ -119,7 +118,7 @@ async def finalize_chat_stream(
 
     consumption_data = create_consumption_data(token_usage=token_usage, cost=cost)
 
-    total_token_usage, total_cost = await update_total_consumption(
+    total_token_usage, total_cost = await data.update_total_consumption(
         consumption_data=consumption_data,
     )
 
