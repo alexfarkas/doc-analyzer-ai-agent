@@ -1,3 +1,4 @@
+// src/components/AnalysisResult.jsx
 import { useMemo, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -65,17 +66,40 @@ export default function AnalysisResult({
     return answers[answers.length - 1]?.answer ?? '';
   };
 
-  const getAssignmentTitle = (roleApiParam, authorApiParam) => {
+  // 🔹 ИСПРАВЛЕНО: надежный поиск ui_title по api_param (author)
+  const getAssignmentTitle = (authorApiParam) => {
     if (!authorApiParam) return '';
-    if (!rolesConfig || rolesConfig.length === 0) return authorApiParam;
 
-    const role = rolesConfig.find(r => r.api_param === roleApiParam);
-    if (!role || !Array.isArray(role.assignments)) {
-      return authorApiParam;
+    // 1. Ищем в актуальном конфиге из пропсов (приоритетный способ)
+    if (rolesConfig && rolesConfig.length > 0) {
+      for (const role of rolesConfig) {
+        if (Array.isArray(role.assignments)) {
+          const assignment = role.assignments.find(a => a.api_param === authorApiParam);
+          if (assignment) return assignment.ui_title;
+        }
+      }
     }
 
-    const assignment = role.assignments.find(a => a.api_param === authorApiParam);
-    return assignment?.ui_title || authorApiParam;
+    // 2. Фоллбэк на localStorage (как указано в задаче)
+    try {
+      const savedConfig = localStorage.getItem('doc_analyzer_selection_v3');
+      if (savedConfig) {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed && Array.isArray(parsed.roles)) {
+          for (const role of parsed.roles) {
+            if (Array.isArray(role.assignments)) {
+              const assignment = role.assignments.find(a => a.api_param === authorApiParam);
+              if (assignment) return assignment.ui_title;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse roles config from localStorage', e);
+    }
+
+    // Если не нашли, возвращаем исходное значение
+    return authorApiParam;
   };
 
   const getIterationLabel = (tabIndex, iterationIndex) => {
@@ -83,8 +107,9 @@ export default function AnalysisResult({
     const item = answers[iterationIndex];
     if (!item) return '';
 
-    const roleApiParam = parsedContent[tabIndex]?.role;
-    return getAssignmentTitle(roleApiParam, item.author);
+    // 🔹 ИСПРАВЛЕНО: передаем только author, роль для поиска не обязательна,
+    // так как api_param (exec, corrector) уникальны глобально
+    return getAssignmentTitle(item.author);
   };
 
   const getIterationTooltip = (tabIndex, iterationIndex) => {
@@ -100,7 +125,7 @@ export default function AnalysisResult({
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center gap-2 text-gray-500 text-sm">
+      <div className="flex min-h-[500px] items-center justify-center gap-2 text-gray-500 text-sm">
         <span className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"/>
         Анализ документа...
       </div>
@@ -109,7 +134,7 @@ export default function AnalysisResult({
 
   if (!content || parsedContent.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-gray-400 text-sm select-none">
+      <div className="flex min-h-[500px] items-center justify-center text-gray-400 text-sm select-none">
         Результат анализа появится здесь
       </div>
     );
@@ -196,7 +221,6 @@ export default function AnalysisResult({
   };
 
   const showTabs = parsedContent.length > 1;
-
   const answers = getAnswers(safeActiveTab);
   const totalButtons = answers.length;
   const hasIterations = totalButtons > 1;
@@ -370,18 +394,12 @@ export default function AnalysisResult({
       <div className="flex-1 overflow-hidden flex">
         {compareState ? (
           <>
-            <IterationPanel
-              side="left"
-              iterationIndex={compareState.leftIteration}
-            />
+            <IterationPanel side="left" iterationIndex={compareState.leftIteration} />
             <div className="w-px bg-gray-200" />
-            <IterationPanel
-              side="right"
-              iterationIndex={compareState.rightIteration}
-            />
+            <IterationPanel side="right" iterationIndex={compareState.rightIteration} />
           </>
         ) : (
-          <div className="flex-1 overflow-auto pr-2 text-gray-900">
+          <div className="flex-1 overflow-auto p-4 text-gray-900">
             {parsedContent[safeActiveTab] ? (
               <MarkdownContent text={getDisplayText(safeActiveTab, getSelectedIteration(safeActiveTab))} />
             ) : (

@@ -1,9 +1,8 @@
+// src/components/StatisticsSummary.jsx
 import React, { useState, useMemo } from 'react';
 
-// 🔹 Максимальное значение int в Python (2^63 - 1)
 const MAX_PYTHON_INT = '9223372036854775807';
 
-// 🔹 Форматирование числа с пробелами как разделителем разрядов (1 000, 25 500)
 const formatNumber = (num) => {
   if (num == null || num === undefined) return '—';
   const numValue = Number(num);
@@ -11,7 +10,6 @@ const formatNumber = (num) => {
   return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
-// 🔹 Форматирование стоимости (float с 2 знаками после запятой)
 const formatCost = (num) => {
   if (num == null || num === undefined || num === '') return '—';
   const numValue = Number(num);
@@ -22,11 +20,14 @@ const formatCost = (num) => {
     .replace('.', ',');
 };
 
-// 🔹 Форматирование времени: секунды с 2 знаками ИЛИ "x мин y с"
+// 🔹 ИСПРАВЛЕНО: добавлена проверка на 0, чтобы отображать прочерк, если анализ не проводился
 const formatTime = (seconds) => {
-  if (seconds == null || seconds === undefined) return '—';
+  if (seconds == null || seconds === undefined || Number(seconds) === 0) {
+    return '—';
+  }
+
   const totalSeconds = Number(seconds);
-  if (isNaN(totalSeconds)) return '—';
+  if (isNaN(totalSeconds) || totalSeconds <= 0) return '—';
 
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
@@ -58,70 +59,32 @@ export default function StatisticsSummary({
   const [isClearing, setIsClearing] = useState(false);
   const [clearError, setClearError] = useState('');
 
-  // 🔹 Флаги наличия данных с защитой от undefined/null
-  const hasSpentTokens = totalTokens !== undefined && totalTokens !== null && totalTokens !== '';
-  const hasTotalTokens = totalTokensAll !== undefined && totalTokensAll !== null && totalTokensAll !== '';
-
-  // 🔹 Флаги для стоимости
-  const hasCurrency = currency !== null && currency !== undefined && currency !== '';
-  const hasCost = hasCurrency && cost !== null && cost !== undefined && cost !== '';
-  const hasTotalCost = hasCurrency && totalCost !== null && totalCost !== undefined && totalCost !== '';
+  // Строгая проверка > 0. Если 0, null или undefined, будет показан '—'
+  const hasSpentTokens = Number(totalTokens) > 0;
+  const hasTotalTokens = Number(totalTokensAll) > 0;
+  const hasCost = Number(cost) > 0;
+  const hasTotalCost = Number(totalCost) > 0;
   const hasCostData = hasTotalTokens || hasTotalCost;
 
-  // 🔹 Вычисление цвета для значения "Всего токенов" с полной защитой
   const totalTokensColorClass = useMemo(() => {
     if (!hasTotalTokens) return 'text-gray-900';
+    if (!limit || limit === '' || limit === null || limit === undefined) return 'text-gray-900';
 
-    if (!limit || limit === '' || limit === null || limit === undefined) {
-      return 'text-gray-900';
-    }
+    let limitValue = typeof limit === 'string' ? parseInt(limit, 10) : limit;
+    if (isNaN(limitValue) || !isFinite(limitValue) || limitValue <= 0) return 'text-gray-900';
 
-    let limitValue;
-    if (typeof limit === 'string') {
-      limitValue = parseInt(limit, 10);
-    } else if (typeof limit === 'number') {
-      limitValue = limit;
-    } else {
-      return 'text-gray-900';
-    }
+    let totalTokensValue = typeof totalTokensAll === 'string' ? parseInt(totalTokensAll, 10) : totalTokensAll;
+    if (isNaN(totalTokensValue) || !isFinite(totalTokensValue)) return 'text-gray-900';
 
-    if (isNaN(limitValue) || !isFinite(limitValue) || limitValue <= 0) {
-      return 'text-gray-900';
-    }
-
-    let totalTokensValue;
-    if (typeof totalTokensAll === 'string') {
-      totalTokensValue = parseInt(totalTokensAll, 10);
-    } else if (typeof totalTokensAll === 'number') {
-      totalTokensValue = totalTokensAll;
-    } else {
-      return 'text-gray-900';
-    }
-
-    if (isNaN(totalTokensValue) || !isFinite(totalTokensValue)) {
-      return 'text-gray-900';
-    }
-
-    if (totalTokensValue >= limitValue) {
-      return 'text-red-600';
-    }
-
-    if (!limitSettings || limitSettings === null || limitSettings === undefined) {
-      return 'text-gray-900';
-    }
+    if (totalTokensValue >= limitValue) return 'text-red-600';
+    if (!limitSettings || limitSettings === null || limitSettings === undefined) return 'text-gray-900';
 
     const diff = limitValue - totalTokensValue;
 
     if (limitSettings.limit_threshold_mode === 'abs_value') {
-      let threshold;
-      if (typeof limitSettings.limit_warning_threshold === 'string') {
-        threshold = parseInt(limitSettings.limit_warning_threshold, 10);
-      } else if (typeof limitSettings.limit_warning_threshold === 'number') {
-        threshold = limitSettings.limit_warning_threshold;
-      } else {
-        return 'text-gray-900';
-      }
-
+      let threshold = typeof limitSettings.limit_warning_threshold === 'string'
+        ? parseInt(limitSettings.limit_warning_threshold, 10)
+        : limitSettings.limit_warning_threshold;
       if (!isNaN(threshold) && isFinite(threshold) && threshold > 0 && diff <= threshold) {
         return 'text-yellow-600';
       }
@@ -129,15 +92,9 @@ export default function StatisticsSummary({
     }
 
     if (limitSettings.limit_threshold_mode === 'percent') {
-      let thresholdPc;
-      if (typeof limitSettings.limit_warning_threshold_pc === 'string') {
-        thresholdPc = parseInt(limitSettings.limit_warning_threshold_pc, 10);
-      } else if (typeof limitSettings.limit_warning_threshold_pc === 'number') {
-        thresholdPc = limitSettings.limit_warning_threshold_pc;
-      } else {
-        return 'text-gray-900';
-      }
-
+      let thresholdPc = typeof limitSettings.limit_warning_threshold_pc === 'string'
+        ? parseInt(limitSettings.limit_warning_threshold_pc, 10)
+        : limitSettings.limit_warning_threshold_pc;
       if (!isNaN(thresholdPc) && isFinite(thresholdPc) && thresholdPc > 0 && limitValue > 0) {
         const currentPc = (diff * 100) / limitValue;
         if (!isNaN(currentPc) && isFinite(currentPc) && currentPc <= thresholdPc) {
@@ -152,71 +109,29 @@ export default function StatisticsSummary({
 
   const handleLimitChange = (e) => {
     const value = e.target.value;
-
-    if (value === '') {
-      onLimitChange('');
-      return;
-    }
-
-    if (!/^\d+$/.test(value)) {
-      return;
-    }
-
+    if (value === '') { onLimitChange(''); return; }
+    if (!/^\d+$/.test(value)) return;
     try {
-      const num = BigInt(value);
-      if (num > BigInt(MAX_PYTHON_INT)) {
-        return;
-      }
-    } catch {
-      return;
-    }
-
+      if (BigInt(value) > BigInt(MAX_PYTHON_INT)) return;
+    } catch { return; }
     onLimitChange(value);
   };
 
   const handleLimitPaste = (e) => {
     e.preventDefault();
     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-
-    if (pastedText === '') {
-      onLimitChange('');
-      return;
-    }
-
-    if (!/^\d+$/.test(pastedText)) {
-      return;
-    }
-
+    if (pastedText === '') { onLimitChange(''); return; }
+    if (!/^\d+$/.test(pastedText)) return;
     try {
-      const num = BigInt(pastedText);
-      if (num > BigInt(MAX_PYTHON_INT)) {
-        return;
-      }
-    } catch {
-      return;
-    }
-
+      if (BigInt(pastedText) > BigInt(MAX_PYTHON_INT)) return;
+    } catch { return; }
     onLimitChange(pastedText);
   };
 
   const handleLimitKeyDown = (e) => {
-    const allowedKeys = [
-      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
-      'Home', 'End', 'ArrowLeft', 'ArrowRight',
-      'ArrowUp', 'ArrowDown'
-    ];
-
-    if (allowedKeys.includes(e.key)) {
-      return;
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      return;
-    }
-
-    if (!/^\d$/.test(e.key)) {
-      e.preventDefault();
-    }
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
+    if (!/^\d$/.test(e.key)) e.preventDefault();
   };
 
   const handleClearClick = () => {
@@ -227,10 +142,8 @@ export default function StatisticsSummary({
   const handleConfirmClear = async () => {
     setIsClearing(true);
     setClearError('');
-
     try {
       const result = await onClearTokens?.();
-
       if (result?.success) {
         setShowClearConfirm(false);
       } else {
@@ -252,8 +165,6 @@ export default function StatisticsSummary({
   return (
     <section className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm relative">
       <div className="space-y-2 text-sm text-gray-700">
-
-        {/* 🔹 СТРОКА 1: "Потрачено токенов" + стоимость в скобках + "Первая генерация" */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-medium text-gray-500">Потрачено токенов:</span>
@@ -261,7 +172,7 @@ export default function StatisticsSummary({
               {hasSpentTokens ? formatNumber(totalTokens) : '—'}
             </span>
 
-            {hasSpentTokens && (
+            {hasSpentTokens ? (
               <span className="flex items-center gap-1 text-gray-600">
                 (<span className="flex items-center gap-1">
                   <span className="text-green-600" title="Входные токены">↑</span>
@@ -273,9 +184,10 @@ export default function StatisticsSummary({
                   <span className="font-mono">{formatNumber(outputTokens)}</span>
                 </span>)
               </span>
+            ) : (
+              <span className="text-gray-400 font-mono text-xs ml-1">(— / —)</span>
             )}
 
-            {/* 🔹 ИЗМЕНЕНО: стоимость в квадратных скобках, без слова "Стоимость:" */}
             {hasCost && (
               <span className="font-mono text-gray-700">
                 [{formatCost(cost)} {currency}]
@@ -289,7 +201,6 @@ export default function StatisticsSummary({
           </div>
         </div>
 
-        {/* 🔹 СТРОКА 2: "Всего токенов" + стоимость в скобках + корзина + "Лимит" */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-medium text-gray-500">Всего токенов:</span>
@@ -300,7 +211,7 @@ export default function StatisticsSummary({
               {hasTotalTokens ? formatNumber(totalTokensAll) : '—'}
             </span>
 
-            {hasTotalTokens && (
+            {hasTotalTokens ? (
               <span className="flex items-center gap-1 text-gray-600">
                 (<span className="flex items-center gap-1">
                   <span className="text-green-600" title="Входные токены">↑</span>
@@ -312,9 +223,10 @@ export default function StatisticsSummary({
                   <span className="font-mono">{formatNumber(outputTokensAll)}</span>
                 </span>)
               </span>
+            ) : (
+              <span className="text-gray-400 font-mono text-xs ml-1">(— / —)</span>
             )}
 
-            {/* 🔹 ИЗМЕНЕНО: стоимость в квадратных скобках, без слова "Стоимость:" */}
             {hasTotalCost && (
               <span className="font-mono text-gray-700">
                 [{formatCost(totalCost)} {currency}]
@@ -322,7 +234,6 @@ export default function StatisticsSummary({
             )}
           </div>
 
-          {/* 🔹 Иконка корзины — ПОСЛЕ блока стоимости */}
           {hasCostData && (
             <button
               type="button"
@@ -332,16 +243,7 @@ export default function StatisticsSummary({
                        text-gray-400 hover:text-red-600 hover:bg-red-50
                        transition-all duration-150 ml-1"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
                 <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -373,7 +275,6 @@ export default function StatisticsSummary({
         </div>
       </div>
 
-      {/* 🔹 Модальное окно подтверждения очистки */}
       {showClearConfirm && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
           <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm mx-4">
