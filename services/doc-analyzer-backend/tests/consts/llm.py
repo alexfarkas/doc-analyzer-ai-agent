@@ -1,0 +1,5 @@
+DEFAULT_LLM_MODEL = "test model"
+DEFAULT_LLM_PROVIDER = "ollama"
+DEFAULT_LLM_BASE_URL = "https://example.com"
+DEFAULT_LLM_TEMPERATURE = 0.2
+DEFAULT_LLM_MOCK_RESPONSE = "mock response"
