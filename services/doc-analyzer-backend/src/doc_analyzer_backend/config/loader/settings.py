@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import (
@@ -9,9 +11,11 @@ from pydantic_settings import (
 
 from src.doc_analyzer_backend.config.app_config import app_config
 from src.doc_analyzer_backend.config.pricing_config import PricingConfig
-from src.doc_analyzer_backend.config.sources import FileConfigSettingsSource
+from src.doc_analyzer_backend.config.loader.sources import FileConfigSettingsSource
 
 logger = logging.getLogger(__name__)
+
+CONFIG_DIR = "config"
 
 
 class AppSettings(BaseSettings):
@@ -38,24 +42,28 @@ class AppSettings(BaseSettings):
 
         Порядок (слева направо = от низкого к высокому приоритету):
         1. Значения из __init__()
-        2. pricing.json (базовые цены)
-        3. llm.yaml (базовые настройки LLM)
-        4. Системные переменные окружения
-        5. .env файл (самый высокий приоритет)
+        2. yaml файлы
+        3. Системные переменные окружения
+        4. .env файл (самый высокий приоритет)
         """
-        pricing_filepath = app_config.pricing_filepath
-        if not pricing_filepath:
-            logger.warning(
-                f"Pricing config filepath not found in '{pricing_filepath}'."
-            )
-            pricing_filepath = ""
+        project_root_dir: Path = Path(__file__).resolve().parents[4]
+
+        filepath_pricing = cls._get_config_path(project_root_dir=project_root_dir, filename="pricing.yaml")
 
         return (
             init_settings,
-            FileConfigSettingsSource(settings_cls, pricing_filepath),
-            env_settings,
+            FileConfigSettingsSource(settings_cls, filepath_pricing),
+            #env_settings,
             # dotenv_settings,
         )
+
+    @classmethod
+    def _get_config_path(cls, project_root_dir: Path, filename: str) -> str:
+        filepath = os.path.join(project_root_dir, CONFIG_DIR, filename)
+        if not os.path.isfile(filepath):
+            logger.error(f"Config filepath not found in '{filepath}'.")
+            raise FileNotFoundError(f"Config filepath not found in '{filepath}'.")
+        return filepath
 
 
 _settings: AppSettings | None = None
