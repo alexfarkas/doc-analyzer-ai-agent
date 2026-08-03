@@ -14,7 +14,6 @@ const streamChatResponse = async (
   onUsage
 ) => {
   try {
-    // Используем apiStream, который включает credentials: 'include'
     const response = await apiStream('/doc/chat/stream', {
       method: 'POST',
       body: JSON.stringify({
@@ -163,7 +162,6 @@ export default function JudgementResult({
     setIsLoading(prev => ({ ...prev, clarify: true }));
 
     try {
-      // Используем apiFetch
       const data = await apiFetch('/doc/clarify', {
         method: 'POST',
         body: JSON.stringify({
@@ -290,16 +288,15 @@ export default function JudgementResult({
   const tabs = ['Оценка', 'Уточнение', 'Чат'];
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200 bg-gray-50">
+    <div className="card">
+      <div className="card-header">
         <div className="flex items-center gap-1">
           {tabs.map((tabName, index) => (
             <button
               key={index}
               type="button"
               onClick={() => setJudgementTab(index)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-t transition-all whitespace-nowrap
-                ${judgementTab === index ? 'bg-white text-indigo-700 border-b-2 border-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+              className={`tab-base ${judgementTab === index ? 'tab-active' : 'tab-inactive'}`}
             >
               {tabName}
             </button>
@@ -310,7 +307,7 @@ export default function JudgementResult({
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
             disabled={isLoading.clarify || isLoading.chat}
-            className="px-2 py-1 bg-white border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-gray-900 text-xs disabled:opacity-60 min-w-[140px]"
+            className="input-base min-w-[140px] py-1 text-xs"
           >
             {availableModels.map(model => (
               <option key={`${model.provider}-${model.name}`} value={model.name}>{model.name}</option>
@@ -338,18 +335,18 @@ export default function JudgementResult({
               onKeyDown={(e) => handleKeyDown(e, 'clarify')}
               placeholder="Введите уточняющий вопрос или комментарий..."
               disabled={isLoading.clarify}
-              className="w-full min-h-[80px] px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-gray-900 text-sm resize-y disabled:opacity-60"
+              className="input-base w-full min-h-[80px] resize-y"
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Ctrl+Enter для отправки</span>
+              <span className="text-hint">Ctrl+Enter для отправки</span>
               <button
                 type="button"
                 onClick={handleClarifySubmit}
                 disabled={isLoading.clarify || !(clarificationInputs[activeTab]?.trim())}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-all text-sm flex items-center gap-2"
+                className="btn-primary"
               >
                 {isLoading.clarify ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Отправка...</>
+                  <><span className="spinner-white"/> Отправка...</>
                 ) : 'Отправить'}
               </button>
             </div>
@@ -392,18 +389,18 @@ export default function JudgementResult({
               onKeyDown={(e) => handleKeyDown(e, 'chat')}
               placeholder="Введите сообщение..."
               disabled={isLoading.chat}
-              className="w-full min-h-[80px] px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-gray-900 text-sm resize-y disabled:opacity-60"
+              className="input-base w-full min-h-[80px] resize-y"
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Ctrl+Enter для отправки</span>
+              <span className="text-hint">Ctrl+Enter для отправки</span>
               <button
                 type="button"
                 onClick={handleChatSubmit}
                 disabled={isLoading.chat || !(chatHistories[activeTab]?.input?.trim())}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-all text-sm flex items-center gap-2"
+                className="btn-primary"
               >
                 {isLoading.chat ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Отправка...</>
+                  <><span className="spinner-white"/> Отправка...</>
                 ) : 'Отправить'}
               </button>
             </div>

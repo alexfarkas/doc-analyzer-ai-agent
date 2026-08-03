@@ -1,4 +1,3 @@
-// src/components/AnalysisResult.jsx
 import { useMemo, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -66,11 +65,9 @@ export default function AnalysisResult({
     return answers[answers.length - 1]?.answer ?? '';
   };
 
-  // 🔹 ИСПРАВЛЕНО: надежный поиск ui_title по api_param (author)
   const getAssignmentTitle = (authorApiParam) => {
     if (!authorApiParam) return '';
 
-    // 1. Ищем в актуальном конфиге из пропсов (приоритетный способ)
     if (rolesConfig && rolesConfig.length > 0) {
       for (const role of rolesConfig) {
         if (Array.isArray(role.assignments)) {
@@ -80,7 +77,6 @@ export default function AnalysisResult({
       }
     }
 
-    // 2. Фоллбэк на localStorage (как указано в задаче)
     try {
       const savedConfig = localStorage.getItem('doc_analyzer_selection_v3');
       if (savedConfig) {
@@ -98,7 +94,6 @@ export default function AnalysisResult({
       console.warn('Failed to parse roles config from localStorage', e);
     }
 
-    // Если не нашли, возвращаем исходное значение
     return authorApiParam;
   };
 
@@ -106,9 +101,6 @@ export default function AnalysisResult({
     const answers = getAnswers(tabIndex);
     const item = answers[iterationIndex];
     if (!item) return '';
-
-    // 🔹 ИСПРАВЛЕНО: передаем только author, роль для поиска не обязательна,
-    // так как api_param (exec, corrector) уникальны глобально
     return getAssignmentTitle(item.author);
   };
 
@@ -125,8 +117,8 @@ export default function AnalysisResult({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[500px] items-center justify-center gap-2 text-gray-500 text-sm">
-        <span className="w-5 h-5 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"/>
+      <div className="loading-state">
+        <span className="spinner-indigo"/>
         Анализ документа...
       </div>
     );
@@ -134,7 +126,7 @@ export default function AnalysisResult({
 
   if (!content || parsedContent.length === 0) {
     return (
-      <div className="flex min-h-[500px] items-center justify-center text-gray-400 text-sm select-none">
+      <div className="empty-state">
         Результат анализа появится здесь
       </div>
     );
@@ -266,10 +258,17 @@ export default function AnalysisResult({
   const IterationPanel = ({ side, iterationIndex }) => {
     return (
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
+        <div className="iteration-panel-header">
           {answers.map((answerItem, i) => {
             const isFinal = answerItem.status === 'final';
             const isThisSelected = iterationIndex === i;
+
+            let btnClass = "iteration-btn ";
+            if (isThisSelected) {
+              btnClass += isFinal ? "iteration-btn-selected-final" : "iteration-btn-selected-draft";
+            } else {
+              btnClass += isFinal ? "iteration-btn-unselected-final" : "iteration-btn-unselected-draft";
+            }
 
             return (
               <button
@@ -277,24 +276,14 @@ export default function AnalysisResult({
                 type="button"
                 onClick={() => handleIterationSelect(i, side)}
                 title={getIterationTooltip(safeActiveTab, i)}
-                className={`
-                  min-w-[32px] h-8 px-2 text-xs font-semibold rounded transition-all shrink-0
-                  ${isThisSelected
-                    ? isFinal
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-yellow-500 text-white shadow-sm'
-                    : isFinal
-                      ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'
-                      : 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50'
-                  }
-                `}
+                className={btnClass}
               >
                 {i + 1}
               </button>
             );
           })}
 
-          <span className="ml-3 text-xs text-gray-500 whitespace-nowrap">
+          <span className="iteration-label">
             {getIterationLabel(safeActiveTab, iterationIndex)}
           </span>
         </div>
@@ -315,13 +304,7 @@ export default function AnalysisResult({
               key={index}
               type="button"
               onClick={() => onTabChange?.(index)}
-              className={`
-                px-3 py-1.5 text-sm font-medium rounded-t transition-all whitespace-nowrap shrink-0
-                ${activeTab === index
-                  ? 'bg-white text-indigo-700 border-b-2 border-indigo-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }
-              `}
+              className={`tab-base ${activeTab === index ? 'tab-active' : 'tab-inactive'}`}
             >
               {getTabTitle(item, index)}
             </button>
@@ -331,44 +314,39 @@ export default function AnalysisResult({
 
       {!showTabs && parsedContent[safeActiveTab]?.score != null && (
         <div className="flex items-center px-2 py-2 border-b border-gray-200 bg-gray-50" style={{ minHeight: '40px' }}>
-          <span className="px-3 py-1.5 text-sm font-medium text-indigo-700 whitespace-nowrap">
+          <span className="px-3 py-1.5 text-sm font-medium text-accent-primary whitespace-nowrap">
             Оценка: {formatScore(parsedContent[safeActiveTab].score)}
           </span>
         </div>
       )}
 
       {hasIterations && (
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-amber-50/50 overflow-x-auto">
+        <div className="iteration-panel-header">
           {!compareState && (
             <>
               {answers.map((answerItem, i) => {
                 const isFinal = answerItem.status === 'final';
                 const isSelected = getSelectedIteration(safeActiveTab) === i;
-
+                let btnClass = "iteration-btn ";
+                if (isSelected) {
+                  btnClass += isFinal ? "iteration-btn-selected-final" : "iteration-btn-selected-draft";
+                } else {
+                  btnClass += isFinal ? "iteration-btn-unselected-final" : "iteration-btn-unselected-draft";
+                }
                 return (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleIterationSelect(i, 'left')}
                     title={getIterationTooltip(safeActiveTab, i)}
-                    className={`
-                      min-w-[32px] h-8 px-2 text-xs font-semibold rounded transition-all shrink-0
-                      ${isSelected
-                        ? isFinal
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-yellow-500 text-white shadow-sm'
-                        : isFinal
-                          ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50'
-                          : 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50'
-                      }
-                    `}
+                    className={btnClass}
                   >
                     {i + 1}
                   </button>
                 );
               })}
 
-              <span className="ml-3 text-xs text-gray-500 whitespace-nowrap">
+              <span className="iteration-label">
                 {getIterationLabel(safeActiveTab, getSelectedIteration(safeActiveTab))}
               </span>
             </>

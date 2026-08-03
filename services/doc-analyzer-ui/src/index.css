@@ -1,1 +1,374 @@
 @import "tailwindcss";
+
+@theme {
+  /* Основной общий фон приложения */
+  --color-bg-app: #f9fafb;
+
+  /* Фоны */
+  --color-bg-card: #ffffff;
+  --color-bg-input: #f9fafb;
+  --color-bg-primary: #4f46e5;
+  --color-bg-primary-hover: #4338ca;
+  --color-bg-secondary: #f3f4f6;
+  --color-bg-secondary-hover: #e5e7eb;
+  --color-bg-subtle: #f9fafb;
+  --color-bg-amber-subtle: rgba(254, 243, 199, 0.5);
+  --color-bg-error-subtle: #fef2f2;
+  --color-bg-success-subtle: #f0fdf4;
+  --color-bg-accent-subtle: #eef2ff;
+
+  /* Цвета текста */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-text-placeholder: #9ca3af;
+  --color-text-white: #ffffff;
+  --color-text-primary-accent: #4338ca;
+  --color-text-accent: #4f46e5;
+  --color-text-error: #dc2626;
+  --color-text-success: #16a34a;
+
+  /* Цвета границ */
+  --color-border-default: #e5e7eb;
+  --color-border-muted: #d1d5db;
+  --color-border-accent: #4f46e5;
+  --color-border-error: #fecaca;
+  --color-border-success: #86efac;
+  --color-border-indigo-300: #a5b4fc;
+
+  /* Радиусы скругления */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.3rem;
+  --radius-full: 10000px;
+
+  /* Шрифты */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Основной общий фон приложения */
+body, .app-root {
+  min-height: 100vh;
+  background-color: var(--color-bg-app);
+}
+.app-root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Заголовок "Doc Analyzer AI" */
+.app-title {
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-style: normal;
+}
+
+/* Карточки */
+.card {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-subtle);
+}
+
+/* Кнопки */
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-white);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-lg);
+  transition: all 150ms;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-bg-primary-hover);
+}
+.btn-primary:disabled {
+  background-color: var(--color-border-muted);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-muted);
+  transition: all 150ms;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary-hover);
+}
+.btn-secondary:disabled {
+  background-color: var(--color-bg-subtle);
+  cursor: not-allowed;
+}
+
+.btn-icon-danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-text-error);
+  border-radius: var(--radius-md);
+  transition: all 150ms;
+}
+.btn-icon-danger:hover:not(:disabled) {
+  color: #b91c1c;
+  background-color: var(--color-bg-error-subtle);
+}
+.btn-icon-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Инпуты и селекты */
+.input-base {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  transition: all 150ms;
+}
+.input-base:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-border-accent);
+  border-color: var(--color-border-accent);
+}
+.input-base:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-mono {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+/* Лейблы и текст */
+.label-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.text-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-placeholder);
+  text-align: center;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.text-error {
+  font-size: 0.75rem;
+  color: var(--color-text-error);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.text-accent-primary {
+  color: var(--color-text-primary-accent);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+/* Табы */
+.tab-base {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+  transition: all 150ms;
+  white-space: nowrap;
+}
+.tab-active {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary-accent);
+  border-bottom: 2px solid var(--color-border-accent);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.tab-inactive {
+  color: var(--color-text-muted);
+}
+.tab-inactive:hover {
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-secondary);
+}
+
+/* Спиннеры */
+.spinner-indigo {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--color-border-muted);
+  border-top-color: var(--color-text-accent);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+.spinner-white {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--color-text-white);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Состояния */
+.loading-state {
+  display: flex;
+  min-height: 500px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.empty-state {
+  display: flex;
+  min-height: 500px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: var(--color-text-placeholder);
+  user-select: none;
+}
+
+/* Карточка агента */
+.agent-card-base {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  transition: all 150ms;
+}
+.agent-card-loading {
+  background-color: var(--color-bg-accent-subtle);
+  border-color: var(--color-border-indigo-300);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.agent-card-done {
+  background-color: var(--color-bg-success-subtle);
+  border-color: var(--color-border-success);
+}
+.agent-card-idle {
+  background-color: var(--color-bg-subtle);
+}
+
+/* Итерации */
+.iteration-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-amber-subtle);
+  overflow-x: auto;
+}
+.iteration-btn {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+.iteration-btn-selected-final {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-white);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.iteration-btn-selected-draft {
+  background-color: #eab308;
+  color: var(--color-text-white);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.iteration-btn-unselected-final {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-accent);
+  border: 1px solid var(--color-border-indigo-300);
+}
+.iteration-btn-unselected-final:hover {
+  background-color: var(--color-bg-accent-subtle);
+}
+.iteration-btn-unselected-draft {
+  background-color: var(--color-bg-card);
+  color: #ca8a04;
+  border: 1px solid #fde047;
+}
+.iteration-btn-unselected-draft:hover {
+  background-color: #fefce8;
+}
+
+.iteration-label {
+  margin-left: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Drag & Drop зона */
+.dropzone {
+  position: relative;
+  border: 2px dashed var(--color-border-muted);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  transition: all 200ms;
+  background-color: var(--color-bg-card);
+}
+.dropzone.dragging {
+  border-color: var(--color-border-accent);
+  background-color: var(--color-bg-accent-subtle);
+}
+.dropzone:hover:not(.dragging) {
+  border-color: #818cf8;
+}
+.dropzone.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

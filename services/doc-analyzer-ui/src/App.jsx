@@ -174,7 +174,7 @@ export default function App() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
-      let currentEvent = ''; // 🔹 ИСПРАВЛЕНО: сохраняем тип события между строками
+      let currentEvent = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -194,7 +194,6 @@ export default function App() {
             try {
               const data = JSON.parse(dataStr);
 
-              // 🔹 ИСПРАВЛЕНО: корректная маршрутизация по типу события
               if (currentEvent === 'agent_start') {
                 setAgentStatuses(prev => ({ ...prev, [data.agentId]: 'loading' }));
               } else if (currentEvent === 'agent_end') {
@@ -267,7 +266,7 @@ export default function App() {
   if (!isSessionInitialized) {
     return (
       <div className="flex h-screen items-center justify-center text-gray-500">
-        <span className="w-6 h-6 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin mr-2"/>
+        <span className="spinner-indigo mr-2"/>
         Инициализация сессии...
       </div>
     );
@@ -276,9 +275,9 @@ export default function App() {
   const currentRole = rolesConfig.find(r => r.api_param === selectedRoleApi);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="app-root">
       <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-900">Doc Analyzer AI</h1>
+        <h1 className="app-title">Doc Analyzer AI</h1>
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
@@ -311,7 +310,6 @@ export default function App() {
           isDisabled={isLoading}
         />
 
-        {/* 1. СТАТИСТИКА НАД результатом анализа */}
         <StatisticsSummary
           elapsed={stats.elapsed}
           inputTokens={stats.inputTokens}
@@ -330,8 +328,7 @@ export default function App() {
           isAnalyzing={isLoading}
         />
 
-        {/* 2. РЕЗУЛЬТАТ АНАЛИЗА */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm min-h-[500px] flex flex-col">
+        <div className="card min-h-[500px] flex flex-col">
           <AnalysisResult
             content={analysisResult}
             rolesConfig={rolesConfig}
@@ -341,7 +338,6 @@ export default function App() {
           />
         </div>
 
-        {/* 3. JUDGEMENT ПОД результатом, ТОЛЬКО если есть данные */}
         {analysisResult && analysisResult.length > 0 && (
           <JudgementResult
             content={analysisResult}

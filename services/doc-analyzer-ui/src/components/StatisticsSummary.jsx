@@ -20,7 +20,6 @@ const formatCost = (num) => {
     .replace('.', ',');
 };
 
-// 🔹 ИСПРАВЛЕНО: добавлена проверка на 0, чтобы отображать прочерк, если анализ не проводился
 const formatTime = (seconds) => {
   if (seconds == null || seconds === undefined || Number(seconds) === 0) {
     return '—';
@@ -59,7 +58,6 @@ export default function StatisticsSummary({
   const [isClearing, setIsClearing] = useState(false);
   const [clearError, setClearError] = useState('');
 
-  // Строгая проверка > 0. Если 0, null или undefined, будет показан '—'
   const hasSpentTokens = Number(totalTokens) > 0;
   const hasTotalTokens = Number(totalTokensAll) > 0;
   const hasCost = Number(cost) > 0;
@@ -163,12 +161,12 @@ export default function StatisticsSummary({
   };
 
   return (
-    <section className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm relative">
+    <section className="card p-4 relative">
       <div className="space-y-2 text-sm text-gray-700">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-medium text-gray-500">Потрачено токенов:</span>
-            <span className="font-mono text-gray-900">
+            <span className="label-text">Потрачено токенов:</span>
+            <span className="text-mono text-gray-900">
               {hasSpentTokens ? formatNumber(totalTokens) : '—'}
             </span>
 
@@ -176,36 +174,36 @@ export default function StatisticsSummary({
               <span className="flex items-center gap-1 text-gray-600">
                 (<span className="flex items-center gap-1">
                   <span className="text-green-600" title="Входные токены">↑</span>
-                  <span className="font-mono">{formatNumber(inputTokens)}</span>
+                  <span className="text-mono">{formatNumber(inputTokens)}</span>
                 </span>
                 <span className="text-gray-400">/</span>
                 <span className="flex items-center gap-1">
                   <span className="text-blue-600" title="Выходные токены">↓</span>
-                  <span className="font-mono">{formatNumber(outputTokens)}</span>
+                  <span className="text-mono">{formatNumber(outputTokens)}</span>
                 </span>)
               </span>
             ) : (
-              <span className="text-gray-400 font-mono text-xs ml-1">(— / —)</span>
+              <span className="text-gray-400 text-mono text-xs ml-1">(— / —)</span>
             )}
 
             {hasCost && (
-              <span className="font-mono text-gray-700">
+              <span className="text-mono text-gray-700">
                 [{formatCost(cost)} {currency}]
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            <span className="font-medium text-gray-500">Первая генерация:</span>
-            <span className="font-mono text-gray-900">{formatTime(elapsed)}</span>
+            <span className="label-text">Первая генерация:</span>
+            <span className="text-mono text-gray-900">{formatTime(elapsed)}</span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-medium text-gray-500">Всего токенов:</span>
+            <span className="label-text">Всего токенов:</span>
             <span
-              className={`font-mono transition-colors duration-300 ${totalTokensColorClass}`}
+              className={`text-mono transition-colors duration-300 ${totalTokensColorClass}`}
               title={hasTotalTokens ? `Точное значение: ${totalTokensAll}` : undefined}
             >
               {hasTotalTokens ? formatNumber(totalTokensAll) : '—'}
@@ -215,20 +213,20 @@ export default function StatisticsSummary({
               <span className="flex items-center gap-1 text-gray-600">
                 (<span className="flex items-center gap-1">
                   <span className="text-green-600" title="Входные токены">↑</span>
-                  <span className="font-mono">{formatNumber(inputTokensAll)}</span>
+                  <span className="text-mono">{formatNumber(inputTokensAll)}</span>
                 </span>
                 <span className="text-gray-400">/</span>
                 <span className="flex items-center gap-1">
                   <span className="text-blue-600" title="Выходные токены">↓</span>
-                  <span className="font-mono">{formatNumber(outputTokensAll)}</span>
+                  <span className="text-mono">{formatNumber(outputTokensAll)}</span>
                 </span>)
               </span>
             ) : (
-              <span className="text-gray-400 font-mono text-xs ml-1">(— / —)</span>
+              <span className="text-gray-400 text-mono text-xs ml-1">(— / —)</span>
             )}
 
             {hasTotalCost && (
-              <span className="font-mono text-gray-700">
+              <span className="text-mono text-gray-700">
                 [{formatCost(totalCost)} {currency}]
               </span>
             )}
@@ -254,7 +252,7 @@ export default function StatisticsSummary({
           )}
 
           <div className="flex items-center gap-2 ml-8">
-            <span className="font-medium text-gray-500 whitespace-nowrap">Лимит:</span>
+            <span className="label-text">Лимит:</span>
             <input
               type="text"
               inputMode="numeric"
@@ -264,12 +262,7 @@ export default function StatisticsSummary({
               onPaste={handleLimitPaste}
               onKeyDown={handleLimitKeyDown}
               disabled={isAnalyzing}
-              className="w-28 px-2 py-1 text-sm font-mono text-gray-500 text-right
-                       bg-white border border-gray-300 rounded
-                       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                       transition
-                       disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100"
-              style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}
+              className="input-base input-mono w-28 py-1"
             />
           </div>
         </div>
@@ -313,7 +306,7 @@ export default function StatisticsSummary({
               >
                 {isClearing ? (
                   <>
-                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                    <span className="spinner-white" style={{ width: '0.75rem', height: '0.75rem' }}/>
                     Очистка...
                   </>
                 ) : (

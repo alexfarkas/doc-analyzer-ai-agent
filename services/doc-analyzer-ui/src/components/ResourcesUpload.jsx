@@ -32,7 +32,6 @@ export default function ResourcesUpload({
       const formData = new FormData();
       formData.append('file', file);
 
-      // Используем apiFetch, который автоматически добавит credentials: 'include'
       const data = await apiFetch('/upload/file', {
         method: 'POST',
         body: formData,
@@ -87,7 +86,6 @@ export default function ResourcesUpload({
 
     setUrlError('');
     try {
-      // Бэкенд сам вернет URL как идентификатор ресурса
       await apiFetch('/upload/from-url', {
         method: 'POST',
         body: JSON.stringify({ url }),
@@ -112,12 +110,7 @@ export default function ResourcesUpload({
 
   return (
     <div
-      className={`
-        relative border-2 border-dashed rounded-lg p-4 
-        transition-all duration-200 bg-white
-        ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'}
-        ${isDisabled ? 'opacity-60 pointer-events-none' : ''}
-      `}
+      className={`dropzone ${isDragging ? 'dragging' : ''} ${isDisabled ? 'disabled' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -127,9 +120,7 @@ export default function ResourcesUpload({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isDisabled}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50
-                   disabled:cursor-not-allowed rounded-lg font-medium text-gray-700
-                   transition-all border border-gray-300 flex items-center gap-2 whitespace-nowrap"
+          className="btn-secondary"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -159,17 +150,13 @@ export default function ResourcesUpload({
             onKeyDown={handleUrlKeyDown}
             placeholder="URL ресурса"
             disabled={isDisabled}
-            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg
-                     focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                     transition placeholder-gray-400 text-gray-900 text-sm"
+            className="input-base flex-1 placeholder-gray-400"
           />
           <button
             type="button"
             onClick={handleAddUrl}
             disabled={isDisabled || !urlInput.trim()}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50
-                     disabled:cursor-not-allowed rounded-lg font-medium text-gray-700
-                     transition-all border border-gray-300 whitespace-nowrap"
+            className="btn-secondary"
           >
             Добавить
           </button>
@@ -177,20 +164,20 @@ export default function ResourcesUpload({
       </div>
 
       {urlError && (
-        <div className="text-xs text-red-600 mb-2 flex items-center gap-1">
+        <div className="text-error mb-2">
           <span>⚠️</span> {urlError}
         </div>
       )}
 
       <div className="border-t border-gray-200 pt-3">
-        <div className="text-xs font-medium text-gray-500 mb-2">
+        <div className="text-caption mb-2">
           Выбранные ресурсы ({resources.length + uploadingFiles.size})
         </div>
 
         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {Array.from(uploadingFiles).map(id => (
             <div key={id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
-              <span className="w-4 h-4 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"/>
+              <span className="spinner-indigo" style={{ width: '1rem', height: '1rem' }}/>
               <span className="text-gray-500 truncate flex-1">Загрузка...</span>
             </div>
           ))}
@@ -201,9 +188,7 @@ export default function ResourcesUpload({
                 type="button"
                 onClick={() => handleRemoveResource(resource.id)}
                 disabled={isDisabled}
-                className="w-5 h-5 flex items-center justify-center text-red-500
-                         hover:text-red-700 hover:bg-red-50 rounded transition
-                         disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-icon-danger"
                 title="Удалить из списка"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,14 +205,14 @@ export default function ResourcesUpload({
           ))}
 
           {resources.length === 0 && uploadingFiles.size === 0 && (
-            <div className="text-xs text-gray-400 text-center py-4">
+            <div className="text-hint py-4">
               Список пуст. Загрузите файл или добавьте URL
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-3 text-xs text-gray-400 text-center">
+      <div className="mt-3 text-hint">
         или перетащите файлы в эту область
       </div>
     </div>
