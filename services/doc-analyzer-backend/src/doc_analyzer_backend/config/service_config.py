@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import Field, BaseModel
 
 
 class ServiceConfig(BaseModel):
@@ -11,14 +11,3 @@ class ServiceConfig(BaseModel):
         default=300, description="API service graceful shutdown timeout"
     )
     reload: bool = Field(default=True, description="API service auto reload")
-
-    model_config = {
-        "env_file": ".env",
-        "env_prefix": "SVC_",
-        "env_file_encoding": "utf-8",
-        "case_sensitive": False,
-        "extra": "ignore",
-    }
-
-
-service_config = ServiceConfig()
