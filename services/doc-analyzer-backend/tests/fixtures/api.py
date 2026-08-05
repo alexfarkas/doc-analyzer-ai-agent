@@ -7,7 +7,26 @@ from fastapi.testclient import TestClient
 from src.doc_analyzer_backend.api.api import app
 from src.doc_analyzer_backend.api.dependencies.dependencies import get_user_session
 from src.doc_analyzer_backend.api.models.config.config_response import ConfigResponse
+from src.doc_analyzer_backend.config.loader.settings import AppSettings
 from src.doc_analyzer_backend.session.data.user_session import UserSession
+
+_APP_SETTINGS_IMPORT_LOCATIONS = [
+    "src.doc_analyzer_backend.api.exceptions.exceptions",
+    "src.doc_analyzer_backend.api.routers.system_router",
+    "src.doc_analyzer_backend.api.routers.doc_analysis_router",
+    "src.doc_analyzer_backend.api.routers.data_sources_router",
+    "src.doc_analyzer_backend.api.routers.tokens_router",
+    "src.doc_analyzer_backend.api.routers.user_session_router",
+    "src.doc_analyzer_backend.agent.consumption_counters.cost_counter",
+    "src.doc_analyzer_backend.agent.core.llm_model_manager",
+    "src.doc_analyzer_backend.agent.council.council",
+    "src.doc_analyzer_backend.components.file_manager.file_manager",
+    "src.doc_analyzer_backend.components.preview_reader.preview_reader",
+    "src.doc_analyzer_backend.components.uploader.file_uploader",
+    "src.doc_analyzer_backend.main",
+    "src.doc_analyzer_backend.session.user_manager",
+    "src.doc_analyzer_backend.tools.tools",
+]
 
 
 @pytest.fixture
@@ -19,21 +38,72 @@ def backend_config():
 
 
 @pytest.fixture
-def test_api_client(mock_agent, mock_council):
+def mock_app_settings(
+    app_config,
+    service_config,
+    llm_config,
+    provider_config,
+    db_config,
+    rag_config,
+    logger_config,
+    pricing_config,
+    mocker,
+):
+    """
+    Мок AppSettings — единая точка управления конфигурацией в тестах.
+
+    Создает мок AppSettings с подмененными полями llm и rag,
+    и патчит функцию app_settings() во всех модулях, где она импортирована.
+    """
+    settings = Mock(spec=AppSettings)
+
+    settings.app = app_config
+    settings.service = service_config
+    settings.llm = llm_config
+    settings.provider = provider_config
+    settings.db = db_config
+    settings.rag = rag_config
+    settings.logger = logger_config
+    settings.pricing = pricing_config
+
+    mocker.patch(
+        "src.doc_analyzer_backend.config.loader.settings.app_settings",
+        return_value=settings,
+    )
+
+    for module_path in _APP_SETTINGS_IMPORT_LOCATIONS:
+        try:
+            mocker.patch(f"{module_path}.app_settings", return_value=settings)
+        except (AttributeError, Exception):
+            pass
+
+    return settings
+
+
+@pytest.fixture
+def test_api_client(mock_app_settings, mock_agent, mock_council):
     """API TestClient with agent and council mocks"""
-    with create_test_client(mock_agent=mock_agent, mock_council=mock_council) as client:
+    with create_test_client(
+        mock_app_settings=mock_app_settings,
+        mock_agent=mock_agent,
+        mock_council=mock_council,
+    ) as client:
         yield client
 
 
 @pytest.fixture
-def test_api_client_no_agent(mock_agent, mock_council):
+def test_api_client_no_agent(mock_app_settings, mock_agent, mock_council):
     """API TestClient with council mock but without agent mock"""
-    with create_test_client(mock_agent=None, mock_council=mock_council) as client:
+    with create_test_client(
+        mock_app_settings=mock_app_settings,
+        mock_agent=None,
+        mock_council=mock_council,
+    ) as client:
         yield client
 
 
 @contextmanager
-def create_test_client(mock_agent, mock_council):
+def create_test_client(mock_app_settings, mock_agent, mock_council):
     """API TestClient with required mocks"""
     mock_session = UserSession(
         session_id="mock-test-session",
@@ -54,7 +124,7 @@ def create_test_client(mock_agent, mock_council):
 
 
 @pytest.fixture
-def test_api_client_real_session(mock_agent, mock_council, mocker):
+def test_api_client_real_session(mock_app_settings, mock_agent, mock_council, mocker):
     mock_session = UserSession(
         session_id="real-test-session",
         agent=mock_agent,
@@ -70,7 +140,7 @@ def test_api_client_real_session(mock_agent, mock_council, mocker):
 
 @pytest.fixture
 def mock_dependencies(
-    mock_agent, mock_council, mock_llm_config, mock_rag_config, mocker
+    mock_app_settings, mock_agent, mock_council, mock_llm_config, mock_rag_config, mocker
 ):
     """Mock all dependencies"""
     mock_session = UserSession(
@@ -83,17 +153,12 @@ def mock_dependencies(
         "src.doc_analyzer_backend.api.dependencies.dependencies.get_user_session",
         return_value=mock_session,
     )
-    mocker.patch(
-        "src.doc_analyzer_backend.api.routers.system_router.llm_config", mock_llm_config
-    )
-    mocker.patch(
-        "src.doc_analyzer_backend.api.routers.system_router.rag_config", mock_rag_config
-    )
 
     return {
         "session": mock_session,
         "agent": mock_agent,
         "council": mock_council,
-        "llm_config": mock_llm_config,
-        "rag_config": mock_rag_config,
+        "app_settings": mock_app_settings,
+        "llm_config": mock_app_settings.llm,
+        "rag_config": mock_app_settings.rag,
     }

@@ -1,7 +1,6 @@
 pytest_plugins = [
     "tests.fixtures.api",
-    "tests.fixtures.llm",
-    "tests.fixtures.rag",
+    "tests.fixtures.config",
     "tests.fixtures.agent",
     "tests.fixtures.uploads",
     "tests.fixtures.files",

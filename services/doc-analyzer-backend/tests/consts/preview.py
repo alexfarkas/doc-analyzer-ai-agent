@@ -1,5 +1,4 @@
-from src.doc_analyzer_backend.config.app_config import app_config
-
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 DEFAULT_PREVIEW_FILE_PATH = "/app/documents"
 DEFAULT_PREVIEW_FILENAME_WO_EXT = "test"
@@ -8,7 +7,7 @@ DEFAULT_PREVIEW_FILENAME_WITH_EXT = (
     f"{DEFAULT_PREVIEW_FILENAME_WO_EXT}.{DEFAULT_PREVIEW_FILE_EXT}"
 )
 
-MAX_PREVIEW_FILE_SIZE = app_config.max_file_preview_size
+MAX_PREVIEW_FILE_SIZE = app_settings().app.max_file_preview_size
 VALID_PREVIEW_FILE_SIZE = MAX_PREVIEW_FILE_SIZE / 2
 
 LONG_PREVIEW_FILENAME_LENGTH = 200
