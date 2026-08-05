@@ -18,7 +18,7 @@ class TestApiHealthCheck:
         f"Запрос GET {HEALTH_CHECK_PATH} с инициализированным агентом возвращает 200 OK "
         'и сообщение со статусом "OK" и названием LLM-модели.'
     )
-    def test_health_check_success(self, test_api_client, mock_llm_config):
+    def test_health_check_success(self, test_api_client, llm_config):
         with allure.step("Выполнение запроса GET /status"):
             response = test_api_client.get(HEALTH_CHECK_PATH)
 

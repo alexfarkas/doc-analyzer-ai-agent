@@ -1,7 +1,7 @@
 import allure
 import pytest
 
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 from tests.assertions.http import assert_response_success
 from tests.assertions.uploads import assert_upload_response_body
 from tests.consts.files import (
@@ -16,7 +16,7 @@ from tests.factories.payloads.valid import make_file_payload
 
 UPLOAD_FILE_PATH = "/upload/file"
 
-SUPPORTED_EXTS = app_config.allowed_exts
+SUPPORTED_EXTS = app_settings().app.allowed_exts
 
 
 @allure.epic("Documents Analyzer AI Agent API")
