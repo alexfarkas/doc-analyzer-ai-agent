@@ -5,7 +5,7 @@ import uuid
 from langchain_core.tools import tool
 from rag_client import ChromaDBClient
 
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 from src.doc_analyzer_backend.decorators.timing import tool_time_logging_async
 from src.doc_analyzer_backend.tools.llm_doc_reader.llm_doc_reader import LLMDocReader
 from src.doc_analyzer_backend.tools.rag_search.rag_search import RagSearch
@@ -53,7 +53,7 @@ async def read_web_page_from_url(url: str):
 
 
 async def _write_web_page_data_to_file(text: str, url: str):
-    upload_dir = os.path.join(os.getcwd(), app_config.docs_dir)
+    upload_dir = os.path.join(os.getcwd(), app_settings().app.docs_dir)
     safe_url = "".join(c if c.isalnum() or c in "_-" else "_" for c in url)
     file_name = f"{safe_url}-{uuid.uuid4().hex[:10]}.md"
     file_path = os.path.join(upload_dir, file_name)

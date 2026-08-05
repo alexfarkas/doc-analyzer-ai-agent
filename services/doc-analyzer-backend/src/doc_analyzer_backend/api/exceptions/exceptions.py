@@ -1,4 +1,4 @@
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 
 class BaseAgentError(Exception):
@@ -37,7 +37,8 @@ class AgentFileTooLargeForPreviewError(BaseAgentError):
 class AgentUnsupportedFileExtensionError(BaseAgentError):
     def __init__(self, file_path: str):
         super().__init__(
-            f"File {file_path} extension not supported. Supported extensions: {', '.join(app_config.allowed_exts)}"
+            f"File {file_path} extension not supported. "
+            f"Supported extensions: {', '.join(app_settings().app.allowed_exts)}"
         )
 
 

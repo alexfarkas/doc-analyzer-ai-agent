@@ -4,7 +4,7 @@ from pathlib import Path
 from src.doc_analyzer_backend.api.exceptions.exceptions import (
     AgentFileInsteadOfDirectoryError,
 )
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 
 def list_files(
@@ -15,7 +15,7 @@ def list_files(
     page: int,
     limit: int,
 ):
-    files_path = Path(app_config.docs_dir).resolve()
+    files_path = Path(app_settings().app.docs_dir).resolve()
 
     if not files_path.is_dir():
         raise AgentFileInsteadOfDirectoryError(docs_dir)

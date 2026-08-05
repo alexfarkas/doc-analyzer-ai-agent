@@ -14,13 +14,14 @@ from src.doc_analyzer_backend.api.routers.doc_analysis_router import (
 from src.doc_analyzer_backend.api.routers.system_router import router as system_router
 from src.doc_analyzer_backend.api.routers.tokens_router import router as tokens_router
 from src.doc_analyzer_backend.api.routers.user_session_router import router as user_session_router
-from src.doc_analyzer_backend.config.logger_config import logger_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger_config = app_settings().logger
     setup_logging(
         log_path=logger_config.path,
         log_level=logger_config.level,

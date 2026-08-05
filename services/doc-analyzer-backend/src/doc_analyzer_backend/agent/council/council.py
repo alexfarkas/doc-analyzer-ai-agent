@@ -18,7 +18,7 @@ from src.doc_analyzer_backend.agent.models.analysis.council_analysis_data import
     CouncilAnalysisData,
 )
 from src.doc_analyzer_backend.api.models.analisys.agent_data import AgentData
-from src.doc_analyzer_backend.config.llm_config import llm_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class Council:
 
         for agent_index, agent_data in enumerate(agents_data, start=1):
             agent = await Agent.create_agent(
-                llm_config,
+                app_settings().llm,
                 agent_index,
                 self._prompt_repository,
                 self._chromadb_client_factory,

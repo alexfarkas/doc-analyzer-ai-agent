@@ -7,9 +7,7 @@ from rag_client import ChromaDBClientFactory
 
 from src.doc_analyzer_backend.agent.agent import Agent
 from src.doc_analyzer_backend.agent.council.council import Council
-from src.doc_analyzer_backend.config.db_config import db_config
-from src.doc_analyzer_backend.config.llm_config import llm_config
-from src.doc_analyzer_backend.config.rag_config import rag_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
@@ -27,7 +25,7 @@ class UserManager:
 
         logger.info("Agent initialization")
         agent = await Agent.create_agent(
-            llm_config=llm_config,
+            llm_config=app_settings().llm,
             prompt_repository=prompt_repository,
             chromadb_client_factory=chromadb_client_factory,
         )
@@ -82,9 +80,9 @@ class UserManager:
 
 def _create_prompt_repository() -> PromptRepository | None:
     prompt_repository = None
-    if db_config.use_db_prompts:
+    if app_settings().db.use_db_prompts:
         logger.info("Initializing DB prompts repository...")
-        prompt_repository = PromptRepository(db_config.url)
+        prompt_repository = PromptRepository(app_settings().db.url)
         logger.info("DB prompts repository initialized")
     else:
         logger.info("Using local prompts")
@@ -93,9 +91,9 @@ def _create_prompt_repository() -> PromptRepository | None:
 
 def _create_chromadb_client_factory() -> ChromaDBClientFactory | None:
     chromadb_client_factory = None
-    if rag_config.use_vector_db:
+    if app_settings().rag.use_vector_db:
         logger.info("Initializing ChromaDB client factory for RAG...")
-        chromadb_client_factory = ChromaDBClientFactory(rag_config)
+        chromadb_client_factory = ChromaDBClientFactory(app_settings().rag)
         logger.info("ChromaDB client factory for RAG initialized")
     else:
         logger.info("No RAG is used")

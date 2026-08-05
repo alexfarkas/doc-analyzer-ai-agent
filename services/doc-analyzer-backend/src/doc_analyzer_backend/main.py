@@ -1,8 +1,9 @@
 import uvicorn
 
-from src.doc_analyzer_backend.config.service_config import service_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 if __name__ == "__main__":
+    service_config = app_settings().service
     uvicorn.run(
         "api.api:app",
         host=service_config.host,

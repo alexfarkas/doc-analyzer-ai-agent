@@ -7,7 +7,7 @@ from fastapi import UploadFile, File
 from src.doc_analyzer_backend.api.exceptions.exceptions import (
     AgentUnsupportedFileExtensionError,
 )
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,10 @@ async def upload_file(file: UploadFile = File(...)):
     file_name = file.filename
     _, ext = os.path.splitext(file_name.lower())
 
-    if ext not in app_config.allowed_exts:
+    if ext not in app_settings().app.allowed_exts:
         raise AgentUnsupportedFileExtensionError(file_name)
 
-    upload_dir = os.path.join(os.getcwd(), app_config.docs_dir)
+    upload_dir = os.path.join(os.getcwd(), app_settings().app.docs_dir)
 
     base = os.path.splitext(file_name)[0]
     safe_base = "".join(c if c.isalnum() or c in "._-" else "_" for c in base)

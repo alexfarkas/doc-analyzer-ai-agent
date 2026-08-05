@@ -13,8 +13,7 @@ from src.doc_analyzer_backend.api.models.status.status_response import (
     ToolData,
     RAGData,
 )
-from src.doc_analyzer_backend.config.llm_config import llm_config
-from src.doc_analyzer_backend.config.rag_config import rag_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ router = APIRouter()
 async def api_health_check(user: UserSession = Depends(get_user_session)):
     """Проверка готовности сервиса"""
     status = "OK" if user.agent is not None else "Agent is not initialized"
-    return HealthCheckResponse(status=status, model=llm_config.model)
+    return HealthCheckResponse(status=status, model=app_settings().llm.model)
 
 
 @router.get("/status", response_model=StatusResponse, response_model_exclude_none=True)
@@ -39,6 +38,7 @@ async def api_status(user: UserSession = Depends(get_user_session)):
                 description=getattr(tool, "description", "unknown").split("\n")[0],
             )
         )
+    rag_config = app_settings().rag
     rag_data = (
         None
         if not rag_config.use_vector_db
@@ -49,8 +49,8 @@ async def api_status(user: UserSession = Depends(get_user_session)):
         )
     )
     return StatusResponse(
-        model=llm_config.model,
-        temperature=llm_config.temperature,
+        model=app_settings().llm.model,
+        temperature=app_settings().llm.temperature,
         tools=tools_data,
         use_rag=rag_config.use_vector_db,
         rag=rag_data,

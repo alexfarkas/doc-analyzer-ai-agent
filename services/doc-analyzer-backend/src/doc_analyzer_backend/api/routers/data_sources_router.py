@@ -28,7 +28,7 @@ from src.doc_analyzer_backend.components.uploader.file_uploader import upload_fi
 from src.doc_analyzer_backend.components.uploader.web_content_uploader import (
     upload_content_from_url,
 )
-from src.doc_analyzer_backend.config.app_config import app_config
+from src.doc_analyzer_backend.config.loader.settings import app_settings
 from src.doc_analyzer_backend.session.data.user_session import UserSession
 
 logger = logging.getLogger(__name__)
@@ -59,11 +59,12 @@ async def api_upload_from_url(
 @router.get("/files/preview", response_model=FilesPreviewResponse)
 async def api_files_preview(
     file_path: str = Query(..., description="File path"),
-    max_size: int = Query(
-        app_config.max_file_preview_size, description="Max file size"
-    ),
+    max_size: int = Query(None, description="Max file size"),
     user: UserSession = Depends(get_user_session),
 ):
+    if max_size is None:
+        max_size = app_settings().app.max_file_preview_size
+
     result = file_preview(file_path, max_size)
     return FilesPreviewResponse(
         status=result["status"],
@@ -85,7 +86,7 @@ async def api_files_list(
     limit: int = Query(20, ge=1, le=100, description="Files on page"),
     user: UserSession = Depends(get_user_session),
 ):
-    docs_dir = app_config.docs_dir
+    docs_dir = app_settings().app.docs_dir
 
     result = list_files(docs_dir, sort_by, sort_order, filter_ext, page, limit)
     pagination = result["pagination"]
