@@ -1,0 +1,15 @@
+rag:
+  embedding_provider: ""
+  embedding_model: ""
+  base_url: ""
+  api_key: ""
+  collection: agent-rag
+  top_k: 3
+  similarity_threshold: 0.5
+  max_context_length: 2000
+  context_block_length: 400
+  host: localhost
+  port: 8000
+  path: ./chromedb
+  use_vector_db: false
+  use_local_vector_db: true

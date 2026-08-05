@@ -1,0 +1,3 @@
+db:
+  url: sqlite:///./data/prompts.db
+  use_db_prompts: false

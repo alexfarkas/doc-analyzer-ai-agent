@@ -1,0 +1,7 @@
+llm:
+  provider: ""
+  model: ""
+  base_url: ""
+  api_key: ""
+  temperature: 1.0
+  mock_response: "Произведен анализ загруженного документа"

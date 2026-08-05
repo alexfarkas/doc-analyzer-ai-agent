@@ -1,0 +1,28 @@
+pricing:
+  providers:
+    ollama:
+      ollama:
+        input: 0.0
+        output: 0.0
+    openai:
+      gpt-5-nano:
+        input: 13.0
+        output: 104.0
+      gpt-5.4-nano:
+        input: 61.0
+        output: 380.0
+      gpt-4o-mini:
+        input: 39.0
+        output: 155.0
+    openrouter/qwen:
+      qwen3.6-plus:
+        input: 1.0
+        output: 1.0
+    deepseek:
+      deepseek-v4-flash:
+        input: 1.0
+        output: 1.0
+    gemini:
+      gemini-2.5-flash-lite:
+        input: 26.0
+        output: 129.0
