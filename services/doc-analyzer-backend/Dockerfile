@@ -7,9 +7,9 @@ COPY shared/db-repository /build/shared/db-repository
 COPY shared/rag-client /build/shared/rag-client
 
 RUN pip install --no-cache-dir --upgrade pip build \
-    && cd /build/shared/agent-enums && python -m build --wheel \
-    && cd /build/shared/db-repository && python -m build --wheel \
-    && cd /build/shared/rag-client && python -m build --wheel
+    && cd /build/shared/agent-enums && python3 -m build --wheel \
+    && cd /build/shared/db-repository && python3 -m build --wheel \
+    && cd /build/shared/rag-client && python3 -m build --wheel
 
 FROM python:3.14.5-slim-bookworm AS runtime
 
@@ -65,8 +65,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 EXPOSE 8000
 
-CMD ["uvicorn", "api.api:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8000", \
-     "--timeout-keep-alive", "300", \
-     "--timeout-graceful-shutdown", "300"]
+CMD ["python3", "-m", "src.doc_analyzer_backend.main"]
