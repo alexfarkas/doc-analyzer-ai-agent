@@ -5,8 +5,8 @@
 
 ## Состав проекта
 
-- `services/doc-analyzer-backend` — API, оркестрация AI-агентов, работа с файлами и URL, RAG, учет токенов и стоимости.
-- `services/doc-analyzer-ui` — web-интерфейс для настройки ролей, агентов, запуска анализа и просмотра результатов.
+- [services/doc-analyzer-backend](./services/doc-analyzer-backend/README.md) — API, оркестрация AI-агентов, работа с файлами и URL, RAG, учет токенов и стоимости.
+- [services/doc-analyzer-ui](./services/doc-analyzer-ui/README.md) — web-интерфейс для настройки ролей, агентов, запуска анализа и просмотра результатов.
 - `shared/*` — общие Python-пакеты:
   - `agent-enums`
   - `db-repository`

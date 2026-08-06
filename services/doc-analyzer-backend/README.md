@@ -4,12 +4,84 @@ Backend на FastAPI платформы для анализа документо
 
 ## Технологический стек
 
-- Python 3.14, FastAPI, Uvicorn
-- LangChain, LangGraph, OpenAI/Ollama
+- Python 3.14
+- FastAPI, Uvicorn
+- LangChain, LangGraph
+- OpenAI / Ollama (через конфиг провайдеров)
 - SQLAlchemy, PostgreSQL
-- ChromaDB и эмбеддинги для RAG
+- ChromaDB (RAG)
 - PyMuPDF, pypdf, pdfplumber, python-docx, python-pptx, openpyxl, unstructured
 - Tesseract OCR, OpenCV, Pillow
+
+## Локальный запуск (без Docker)
+
+```bash
+# из корня репозитория
+pip install -e shared/agent-enums
+pip install -e shared/db-repository
+pip install -e shared/rag-client
+pip install -r services/doc-analyzer-backend/requirements.txt
+
+# запуск backend
+cd services/doc-analyzer-backend
+python -m src.doc_analyzer_backend.main
+```
+
+## Автотесты
+
+### Покрытие
+
+- Backend-тесты в `services/doc-analyzer-backend/tests`.
+- Основной фокус — unit/API-тесты для endpoint-ов анализа документов, загрузки файлов и данных URL, превью файлов и URL, запросы health и status и т.д.
+
+### Запуск через Make (из корня репозитория)
+
+```bash
+make test
+make test-coverage
+```
+
+- `make test` — запускает backend-тесты (`pytest tests/ -v`).
+- `make test-coverage` — запускает тесты с покрытием (HTML-отчет в `services/doc-analyzer-backend/htmlcov`).
+
+### Прямой запуск pytest
+
+```bash
+cd services/doc-analyzer-backend
+pytest tests/ -v
+```
+
+Запуск отдельного теста:
+
+```bash
+cd services/doc-analyzer-backend
+pytest tests/unit/test_api_health_check.py -v
+```
+
+### Allure-отчеты
+
+Настройки `pytest.ini`:
+
+- `--alluredir=./allure-results`
+- `--clean-alluredir`
+
+После прогона тестов результаты находятся в `services/doc-analyzer-backend/allure-results`.
+Если установлен Allure CLI, отчет можно открыть так:
+
+```bash
+cd services/doc-analyzer-backend
+allure serve allure-results
+```
+
+### Тесты shared-пакетов
+
+В `Makefile` есть команда:
+
+```bash
+make test-packages
+```
+
+Она запускает `pytest` по пакетам в `shared/*`.
 
 ## Структура репозитория
 
@@ -57,6 +129,13 @@ doc-analyzer-backend/
 │       └── logs/                       # Runtime-логи backend
 │
 └── tests/                              # Автотесты
+    ├── assertions/                     # Кастомные ассерты
+    ├── consts/                         # Константы для автотестов
+    ├── factories/                      # Фабрики тестовых данных
+    ├── fixtures/                       # Фикстуры
+    ├── unit/                           # Unit API автотесты
+    ├── utils/                          # Тестовые утилиты
+    └── conftest.py                     # Подключение фикстур
 ```
 
 ## API
@@ -67,6 +146,7 @@ doc-analyzer-backend/
 |---|---|---|---|
 | GET | `/health` | `/health` и `/api/health` | Проверка готовности сервиса |
 | GET | `/status` | `/api/status` | Текущая модель, инструменты, состояние RAG |
+| GET | `/status/session` | `/api/status/session` | Статус сессии и активных инструментов |
 | GET | `/config` | `/api/config` | Конфиг для UI: роли, модели, лимиты |
 
 ### Сессия пользователя
@@ -76,7 +156,7 @@ doc-analyzer-backend/
 | GET | `/sessions/current` | `/api/sessions/current` | Получить текущую сессию |
 | DELETE | `/sessions/current` | `/api/sessions/current` | Удалить текущую сессию |
 
-### Источники данных (файлы и URL)
+### Источники данных
 
 | Метод | Backend endpoint | Через UI/Nginx | Назначение |
 |---|---|---|---|
@@ -102,6 +182,12 @@ doc-analyzer-backend/
 |---|---|---|---|
 | GET | `/tokens/total` | `/api/tokens/total` | Суммарные токены и стоимость |
 | POST | `/tokens/clear` | `/api/tokens/clear` | Очистка статистики токенов/стоимости |
+
+## Поддерживаемые форматы файлов
+
+Поддерживаются следующие форматы файлов в качестве источника данных:
+
+`.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.yml`, `.html`, `.xml`, `.docx`, `.xlsx`, `.pptx`, `.pdf`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.tiff`, `.bmp`, `.py`, `.js`, `.ts`, `.java`, `.kt`, `.scala`, `.cs`, `.cpp`, `.go`, `.php`, `.swift`, `.r`, `.pl`, `.sql`, `.sh`, `.zsh`, `.bash`.
 
 ## Примечания по эксплуатации
 
