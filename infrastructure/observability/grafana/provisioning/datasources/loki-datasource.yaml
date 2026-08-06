@@ -1,0 +1,57 @@
+# Grafana datasource provisioning
+# Автоматически добавляет Loki как источник данных при старте Grafana
+# Документация: https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources
+
+apiVersion: 1
+
+# Удаляем старые datasources (опционально)
+deleteDatasources: []
+
+datasources:
+  # ============================================================
+  # Loki (логи)
+  # ============================================================
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    isDefault: true
+    editable: true
+    version: 1
+    jsonData:
+      maxLines: 1000
+      timeout: 60
+      derivedFields:
+        # Извлекаем trace_id для связи с трейсингом (если будет)
+        - name: TraceID
+          datasourceUid: tempo  # если добавите Tempo
+          matcherRegex: "trace_id=(\\w+)"
+          url: "$${__value.raw}"
+      
+      # HTTP headers (если нужна авторизация)
+      # httpHeaderName1: "Authorization"
+    
+    # Secure данные (в production используйте secrets)
+    # secureJsonData:
+    #   httpHeaderValue1: "Bearer ${LOKI_TOKEN}"
+
+  # ============================================================
+  # PostgreSQL (опционально, для прямого доступа к метрикам БД)
+  # ============================================================
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: agent_prompts
+    user: agent
+    editable: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: changeme123
