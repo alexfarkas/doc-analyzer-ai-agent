@@ -247,6 +247,7 @@ doc-analyzer-ai-agent/
 │   ├── doc-analyzer-backend/                   # FastAPI backend
 │   │   ├── Dockerfile                          # Multi-stage build
 │   │   ├── requirements.txt
+│   │   ├── AGENT.md
 │   │   ├── src/
 │   │   │   └── doc_analyzer_backend/
 │   │   │       ├── main.py                     # Точка входа (uvicorn)
@@ -297,10 +298,12 @@ doc-analyzer-ai-agent/
 │   │                                           
 │   └── doc-analyzer-ui/                        # React frontend
 │       ├── Dockerfile                          # Multi-stage build (node -> nginx)
-│       ├── nginx.conf                          # SPA fallback, проксирование API, настройки SSE
-│       ├── package.json                        
+│       ├── nginx.conf                          # SPA fallback, проксирование API, настройки Cookie, SSE
+│       ├── package.json
+│       ├── AGENT.md
 │       └── src/                                
 │           ├── main.jsx                        # Инициализация React
+│           ├── index.css                       # Общие стили приложения
 │           ├── App.jsx                         # Корневой компонент и orchestration API-вызовов
 │           ├── components/                     
 │           │   ├── MainMenu.jsx                # Выбор роли/агентов/моделей/назначений
@@ -308,8 +311,8 @@ doc-analyzer-ai-agent/
 │           │   ├── AnalysisResult.jsx          # Вкладки ответов, markdown-рендер, версии
 │           │   ├── JudgementResult.jsx         # Уточнение и чат со стримингом
 │           │   └── StatisticsSummary.jsx       # Токены, стоимость, лимиты, время
-│           ├── assets/
-│           └── *.css
+│           └── utils/
+│               └── api.js                      # Работа с API backend
 │
 ├── shared/
 │   ├── agent_enums/                            # Role, Assignment, AnswerStatus, PromptType и др.

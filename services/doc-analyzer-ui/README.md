@@ -32,9 +32,11 @@ Vite dev server проксирует `/api` на `http://localhost:8000`.
 doc-analyzer-ui/                        # React frontend
 ├── Dockerfile                          # Multi-stage build (node -> nginx)
 ├── nginx.conf                          # SPA fallback, проксирование API, настройки SSE
-├── package.json                        
+├── package.json
+├── AGENT.md
 └── src/                                
     ├── main.jsx                        # Инициализация React
+    ├── index.css                       # Общие стили приложения
     ├── App.jsx                         # Корневой компонент и orchestration API-вызовов
     ├── components/                     
     │   ├── MainMenu.jsx                # Выбор роли/агентов/моделей/назначений
@@ -42,8 +44,8 @@ doc-analyzer-ui/                        # React frontend
     │   ├── AnalysisResult.jsx          # Вкладки ответов, markdown-рендер, версии
     │   ├── JudgementResult.jsx         # Уточнение и чат со стримингом
     │   └── StatisticsSummary.jsx       # Токены, стоимость, лимиты, время
-    ├── assets/
-    └── *.css
+    └── utils/
+        └── api.js                      # Работа с API backend
 ```
 
 ## Поддерживаемые форматы файлов

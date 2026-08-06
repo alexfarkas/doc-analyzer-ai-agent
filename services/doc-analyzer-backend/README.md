@@ -98,6 +98,7 @@ make test-packages
 doc-analyzer-backend/
 ├── Dockerfile                          # Multi-stage build
 ├── requirements.txt
+├── AGENT.md
 ├── src/
 │   └── doc_analyzer_backend/
 │       ├── main.py                     # Точка входа (uvicorn)
