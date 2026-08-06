@@ -1,0 +1,237 @@
+services:
+  # 🔹 PostgreSQL — основная реляционная БД для хранения промптов, конфигов, метаданных
+  postgres:
+    image: postgres:15-alpine
+    container_name: doc-analyzer-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-agent}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
+      POSTGRES_DB: ${DB_NAME:-agent_prompts}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-agent} -d ${DB_NAME:-agent_prompts}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - core
+      - all
+
+  # 🔹 ChromaDB (векторное хранилище)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: doc-analyzer-chromadb
+    restart: unless-stopped
+    environment:
+      - IS_PERSISTENT=true
+      - ANONYMIZED_TELEMETRY=false
+    volumes:
+      - chroma_data:/chroma/data
+    ports:
+      - "8001:8000"  # Внешний 8001, внутренний 8000
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/8000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    profiles:
+      - core
+      - all
+
+  # Backend (FastAPI + Agent)
+  doc-analyzer-backend:
+    build:
+      context: .
+      dockerfile: services/doc-analyzer-backend/Dockerfile
+    container_name: doc-analyzer-backend
+    restart: unless-stopped
+    volumes:
+      - agent_documents:/app/documents
+      - backend_logs:/app/logs
+    environment:
+      - SVC_HOST=0.0.0.0
+
+      - DB_URL=postgresql://${DB_USER:-agent}:${DB_PASSWORD:-changeme123}@postgres:5432/${DB_NAME:-agent_prompts}
+      - DB_ECHO=${DB_ECHO:-false}
+
+      - LLM_PROVIDER=$LLM_PROVIDER
+      - LLM_MODEL=$LLM_MODEL
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:11434}
+      - LLM_API_KEY=$LLM_API_KEY
+
+      - RAG_EMBEDDING_PROVIDER=$RAG_EMBEDDING_PROVIDER
+      - RAG_EMBEDDING_MODEL=$RAG_EMBEDDING_MODEL
+      - RAG_BASE_URL=${RAG_BASE_URL:-http://host.docker.internal:11434}
+      - RAG_API_KEY=$RAG_API_KEY
+
+      - RAG_HOST=$RAG_HOST
+      - RAG_PORT=$RAG_PORT
+      - RAG_PATH=$RAG_PATH
+      - RAG_COLLECTION=$RAG_COLLECTION
+      - RAG_USE_LOCAL_VECTOR_DB=${RAG_USE_LOCAL_VECTOR_DB:-false}
+      - RAG_USE_VECTOR_DB=${RAG_USE_VECTOR_DB:-true}
+
+      - APP_DOCS_DIR=$APP_DOCS_DIR
+
+      - LOG_PATH=$LOG_PATH
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_WRITE_TO_FILE=$LOG_WRITE_TO_FILE
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    networks:
+      - app_net
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    profiles:
+      - core
+      - all
+
+  # Frontend (React + Nginx)
+  doc-analyzer-frontend:
+    build:
+      context: ./services/doc-analyzer-ui
+      dockerfile: Dockerfile
+    container_name: doc-analyser-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      doc-analyzer-backend:
+        condition: service_healthy
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - core
+      - all
+
+  # 🔹 pgAdmin — веб-интерфейс для администрирования PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: doc-analyzer-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=$PGADMIN_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD=$PGADMIN_PASSWORD
+      - PGADMIN_LISTEN_PORT=80
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=True
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./infrastructure/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./infrastructure/pgadmin/pgpass:/pgpass:ro
+    depends_on:
+      - postgres
+    networks:
+      - app_net
+    profiles:
+      - admin
+      - all
+
+  # 🔹 Loki: хранилище логов
+  loki:
+    image: grafana/loki:latest
+    container_name: doc-analyzer-loki
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - app_net
+    profiles:
+      - observability
+      - all
+
+  # 🔹 Promtail: сборщик логов из Docker
+  promtail:
+    image: grafana/promtail:latest
+    container_name: doc-analyzer-promtail
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/observability/promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - app_net
+    profiles:
+      - observability
+      - all
+
+  # 🔹 Grafana: визуализация
+  grafana:
+    image: grafana/grafana:latest
+    container_name: doc-analyzer-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+    depends_on:
+      - loki
+    networks:
+      - app_net
+    profiles:
+      - observability
+      - all
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: doc-analyzer-postgres_data
+  chroma_data:
+    name: doc-analyzer-chroma_data
+  agent_documents:
+    name: doc-analyzer-agent_documents
+  backend_logs:
+    name: doc-analyzer-backend_logs
+  loki_data:
+    name: doc-analyzer-loki_data
+  grafana_data:
+    name: doc-analyzer-grafana_data
+  pgadmin_data:
+    name: doc-analyzer-pgadmin_data
