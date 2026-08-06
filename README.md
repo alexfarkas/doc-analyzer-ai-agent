@@ -4,7 +4,12 @@
 Система состоит из backend-сервиса на FastAPI и frontend-приложения на React, поддерживает загрузку файлов и URL, мультиагентный анализ, SSE-стриминг, учет токенов и стоимости.
 
 _Анализ документа с коррекцией и оценкой результата:_
-![UI](./assets/readme/ui_multiagents_progress.png)
+
+![Процесс запуска AI-агентов](./assets/readme/ui_multiagents_progress.png)
+
+![Результат анализа документа](./assets/readme/ui_multiagents_result.png)
+
+![Оценка результата анализа](./assets/readme/ui_multiagents_judgement.png)
 
 ## Состав проекта
 
@@ -31,11 +36,6 @@ _Анализ документа с коррекцией и оценкой ре�
 - Уточнение ответа (`/doc/clarify`) и чат с агентом (`/doc/chat`, `/doc/chat/stream`).
 - История ответов и сравнение итераций в UI.
 - Отображение токенов, стоимости и очистка накопленной статистики.
-
-<p align="center">
-  <img src="assets/readme/ui_multiagents_result.png" alt="UI" width="45%">
-  <img src="assets/readme/ui_multiagents_judgement.png" alt="UI" width="45%">
-</p>
 
 ## Технологический стек
 
