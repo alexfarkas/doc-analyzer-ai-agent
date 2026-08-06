@@ -1,47 +1,69 @@
 # AI Documents Analyzer
 
-Монорепозиторий платформы для анализа документов с помощью LLM-агентов.
-Система состоит из backend-сервиса на FastAPI и frontend-приложения на React, работает с файлами и URL, поддерживает потоковую выдачу результатов, учет токенов и стоимости.
+Монорепозиторий платформы для анализа документов с помощью AI-агентов.
+Система состоит из backend-сервиса на FastAPI и frontend-приложения на React, поддерживает загрузку файлов и URL, мультиагентный анализ, SSE-стриминг, учет токенов и стоимости.
 
 ## Состав проекта
 
-- `services/doc-analyzer-backend` — API, оркестрация LLM-агентов, загрузка/предпросмотр документов, RAG, учет токенов/стоимости.
-- `services/doc-analyzer-ui` — web-интерфейс для настройки агентов, запуска анализа и просмотра результатов.
-- `shared/*` — общие пакеты (`agent-enums`, `db-repository`, `rag-client`).
-- `infrastructure/*` — SQL-инициализация и конфиги observability (Loki/Promtail/Grafana).
+- `services/doc-analyzer-backend` — API, оркестрация AI-агентов, работа с файлами и URL, RAG, учет токенов и стоимости.
+- `services/doc-analyzer-ui` — web-интерфейс для настройки ролей, агентов, запуска анализа и просмотра результатов.
+- `shared/*` — общие Python-пакеты:
+  - `agent-enums`
+  - `db-repository`
+  - `rag-client`
+- `infrastructure/*` — инфраструктурные конфиги:
+  - `postgres/init` (SQL-инициализация)
+  - `pgadmin` (конфиги подключения)
+  - `observability` (Loki/Promtail/Grafana)
 
 ## Основные возможности
 
-- Загрузка файлов через UI и добавление URL-источников.
-- Анализ документов в одиночном режиме или в режиме "совета" агентов.
-- Выбор роли, модели и назначения для каждого агента.
-- Стриминг анализа и чата через SSE.
-- Отображение времени выполнения, токенов и стоимости.
-- Очистка накопленной статистики токенов/стоимости через API.
+- Загрузка файлов через UI (drag-and-drop и выбор с диска).
+- Получение данных из URL-источников.
+- Анализ документов в различных режимах (`/doc/analyze`, `/doc/analyze/stream`):
+  - одиночный AI-агент,
+  - совет AI-агентов (несколько агентов с разными назначениями).
+- Выбор роли, количества агентов и их назначения, LLM-модели.
+- Потоковая выдача анализа и чата через SSE.
+- Уточнение ответа (`/doc/clarify`) и чат с агентом (`/doc/chat`, `/doc/chat/stream`).
+- История ответов и сравнение итераций в UI.
+- Отображение токенов, стоимости и очистка накопленной статистики.
 
 ## Технологический стек
 
 **Backend**
-- Python 3.14, FastAPI, Uvicorn
-- LangChain, LangGraph, OpenAI/Ollama
+- Python 3.14
+- FastAPI, Uvicorn
+- LangChain, LangGraph
+- OpenAI / Ollama (через конфиг провайдеров)
 - SQLAlchemy, PostgreSQL
-- ChromaDB и эмбеддинги для RAG
+- ChromaDB (RAG)
 - PyMuPDF, pypdf, pdfplumber, python-docx, python-pptx, openpyxl, unstructured
 - Tesseract OCR, OpenCV, Pillow
 
 **Frontend**
-- React 19, Vite
-- Tailwind CSS
-- Nginx (runtime, проксирование `/api/*` на backend)
+- React 19 + Vite
+- Tailwind CSS 4
+- Nginx (runtime + reverse proxy `/api/*` -> backend)
 
-## Быстрый старт
+**Инфраструктура**
+- Docker Compose (profiles: `core`, `admin`, `observability`, `all`)
+- PostgreSQL, ChromaDB, pgAdmin, Loki, Promtail, Grafana
+
+## Быстрый старт (Docker)
 
 ### Требования
 
-- Docker + Docker Compose
-- Make
+- Docker + Docker Compose (plugin)
 
-### Запуск
+### Подготовка окружения
+
+В проекте используется файл `.env` в корне репозитория.
+Убедитесь, что в нем заданы корректные значения.
+
+### Запуск основных сервисов
+
+Запускает `Frontend`, `Backend`, `Postgres`, `ChromaDB`.
 
 ```bash
 make up
@@ -55,19 +77,135 @@ make up
 - ReDoc: `http://localhost:8000/redoc`
 - ChromaDB: `http://localhost:8001`
 
-### Полезные команды
+### Запуск observability инструментов
+
+Запускает `Loki`, `Promtail`, `Grafana`.
+
+```bash
+make up-observability
+```
+
+После запуска доступны:
+
+- Grafana: `http://localhost:3000`
+
+### Запуск инструментов администрирования
+
+Запускает `pgAdmin`.
+
+```bash
+make up-admin
+```
+
+После запуска доступны:
+
+- pgAdmin: `http://localhost:5050`
+
+### Запуск всех сервисов
+
+Запускает основные сервисы, observability инстурменты и инструменты администрирования
+
+```bash
+make up-all
+```
+
+## Полезные команды Make
 
 ```bash
 make help
-make dev
+make up
 make up-all
+make dev
 make down
 make logs
+make ps
 make test
 make test-coverage
 make lint
 make format
 ```
+
+## Локальный запуск (без Docker)
+
+### Backend
+
+```bash
+# из корня репозитория
+pip install -e shared/agent-enums
+pip install -e shared/db-repository
+pip install -e shared/rag-client
+pip install -r services/doc-analyzer-backend/requirements.txt
+
+# запуск backend
+cd services/doc-analyzer-backend
+python -m src.doc_analyzer_backend.main
+```
+
+### Frontend
+
+```bash
+cd services/doc-analyzer-ui
+npm ci
+npm run dev
+```
+
+Vite dev server проксирует `/api` на `http://localhost:8000`.
+
+## Автотесты
+
+### Покрытие
+
+- Backend-тесты в `services/doc-analyzer-backend/tests`.
+- Основной фокус — unit/API-тесты для endpoint-ов анализа документов, загрузки файлов и данных URL, превью файлов и URL, запросы health и status и т.д.
+
+### Запуск через Make (из корня репозитория)
+
+```bash
+make test
+make test-coverage
+```
+
+- `make test` — запускает backend-тесты (`pytest tests/ -v`).
+- `make test-coverage` — запускает тесты с покрытием (HTML-отчет в `services/doc-analyzer-backend/htmlcov`).
+
+### Прямой запуск pytest
+
+```bash
+cd services/doc-analyzer-backend
+pytest tests/ -v
+```
+
+Запуск отдельного теста:
+
+```bash
+cd services/doc-analyzer-backend
+pytest tests/unit/test_api_health_check.py -v
+```
+
+### Allure-отчеты
+
+Настройки `pytest.ini`:
+
+- `--alluredir=./allure-results`
+- `--clean-alluredir`
+
+После прогона тестов результаты находятся в `services/doc-analyzer-backend/allure-results`.
+Если установлен Allure CLI, отчет можно открыть так:
+
+```bash
+cd services/doc-analyzer-backend
+allure serve allure-results
+```
+
+### Тесты shared-пакетов
+
+В `Makefile` есть команда:
+
+```bash
+make test-packages
+```
+
+Она запускает `pytest` по пакетам в `shared/*`.
 
 ## Структура репозитория
 
@@ -76,6 +214,7 @@ doc-analyzer-ai-agent/
 ├── docker-compose.yml                          # Оркестрация сервисов и профилей
 ├── Makefile                                    # Команды запуска, тестов, линтинга, сборки
 ├── .env                                        # Переменные окружения
+├── README.md
 │
 ├── services/
 │   ├── doc-analyzer-backend/                   # FastAPI backend
@@ -121,6 +260,13 @@ doc-analyzer-ai-agent/
 │   │   │       └── logs/                       # Runtime-логи backend
 │   │   │
 │   │   └── tests/                              # Автотесты
+│   │       ├── assertions/                     # Кастомные ассерты
+│   │       ├── consts/                         # Константы для автотестов
+│   │       ├── factories/                      # Фабрики тестовых данных
+│   │       ├── fixtures/                       # Фикстуры
+│   │       ├── unit/                           # Unit API автотесты
+│   │       ├── utils/                          # Тестовые утилиты
+│   │       └── conftest.py                     # Подключение фикстур
 │   │                                           
 │   └── doc-analyzer-ui/                        # React frontend
 │       ├── Dockerfile                          # Multi-stage build (node -> nginx)
@@ -139,21 +285,21 @@ doc-analyzer-ai-agent/
 │           └── *.css
 │
 ├── shared/
-│   ├── agent-enums/
-│   │   └── agent_enums/                        # Role, Assignment, AnswerStatus, PromptType и др.
-│   ├── db-repository/                          
-│   │   └── db_repository/                      # PromptRepository и SQLAlchemy-модели
-│   └── rag-client/                             
-│       └── rag_client/                         # ChromaDB client/factory, embedders, config
+│   ├── agent_enums/                            # Role, Assignment, AnswerStatus, PromptType и др.
+│   ├── db_repository/                          # PromptRepository и SQLAlchemy-модели                          
+│   └── rag_client/                             # ChromaDB client/factory, embedders, config
 │
 └── infrastructure/
     ├── postgres/
-    │   └── init/
+    │   └── init/                               # Скрипт SQL-инициализации
     └── observability/
-        ├── loki/
-        ├── promtail/
-        └── grafana/
-            └── provisioning/
+        ├── loki/                               # Конфигурация Loki
+        ├── promtail/                           # Конфигурация Promtail
+        ├── grafana/
+        │   └── provisioning/
+        │       ├── dashboards/                 # Grafana dashboards
+        │       └── datasources/                # Grafana datasources
+        └── pgadmin/                            # Настройка подключения к серверу Postgres
 ```
 
 ## API
@@ -164,6 +310,7 @@ doc-analyzer-ai-agent/
 |---|---|---|---|
 | GET | `/health` | `/health` и `/api/health` | Проверка готовности сервиса |
 | GET | `/status` | `/api/status` | Текущая модель, инструменты, состояние RAG |
+| GET | `/status/session` | `/api/status/session` | Статус сессии и активных инструментов |
 | GET | `/config` | `/api/config` | Конфиг для UI: роли, модели, лимиты |
 
 ### Сессия пользователя
@@ -173,7 +320,7 @@ doc-analyzer-ai-agent/
 | GET | `/sessions/current` | `/api/sessions/current` | Получить текущую сессию |
 | DELETE | `/sessions/current` | `/api/sessions/current` | Удалить текущую сессию |
 
-### Источники данных (файлы и URL)
+### Источники данных
 
 | Метод | Backend endpoint | Через UI/Nginx | Назначение |
 |---|---|---|---|
@@ -200,22 +347,14 @@ doc-analyzer-ai-agent/
 | GET | `/tokens/total` | `/api/tokens/total` | Суммарные токены и стоимость |
 | POST | `/tokens/clear` | `/api/tokens/clear` | Очистка статистики токенов/стоимости |
 
-## Observability и инструменты администрирования
+## Поддерживаемые форматы файлов
 
-Профили `docker compose`:
+Поддерживаются следующие форматы файлов в качестве источника данных:
 
-- `observability`: Loki + Promtail + Grafana
-- `admin`: pgAdmin
-
-Запуск:
-
-```bash
-make up-observability
-make up-admin
-```
+`.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.yml`, `.html`, `.xml`, `.docx`, `.xlsx`, `.pptx`, `.pdf`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.tiff`, `.bmp`, `.py`, `.js`, `.ts`, `.java`, `.kt`, `.scala`, `.cs`, `.cpp`, `.go`, `.php`, `.swift`, `.r`, `.pl`, `.sql`, `.sh`, `.zsh`, `.bash`.
 
 ## Примечания по эксплуатации
 
+- Для SSE в `services/doc-analyzer-ui/nginx.conf` отключена буферизация (`proxy_buffering off`).
 - В backend-образе устанавливаются системные зависимости для OCR и обработки документов (в т.ч. `tesseract-ocr`, `poppler-utils`, `libmagic1`).
-- Для стриминговых endpoint'ов в `nginx.conf` отключена буферизация (`proxy_buffering off`), чтобы SSE работал корректно.
 - Shared-пакеты из `shared/*` собираются в wheel и устанавливаются в backend-образ на этапе Docker-сборки.
