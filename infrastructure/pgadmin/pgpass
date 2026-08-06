@@ -1,0 +1,2 @@
+postgres:5432:postgres:agent:changeme123
+postgres:5432:agent_prompts:agent:changeme123
