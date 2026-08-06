@@ -3,6 +3,10 @@
 Монорепозиторий платформы для анализа документов с помощью AI-агентов.
 Система состоит из backend-сервиса на FastAPI и frontend-приложения на React, поддерживает загрузку файлов и URL, мультиагентный анализ, SSE-стриминг, учет токенов и стоимости.
 
+<p align="center">
+  <img src="assets/readme/ui_multiagents_progress.png" alt="UI" width="80%">
+</p>
+
 ## Состав проекта
 
 - [services/doc-analyzer-backend](./services/doc-analyzer-backend/README.md) — API, оркестрация AI-агентов, работа с файлами и URL, RAG, учет токенов и стоимости.
@@ -28,6 +32,11 @@
 - Уточнение ответа (`/doc/clarify`) и чат с агентом (`/doc/chat`, `/doc/chat/stream`).
 - История ответов и сравнение итераций в UI.
 - Отображение токенов, стоимости и очистка накопленной статистики.
+
+<p align="center">
+  <img src="assets/readme/ui_multiagents_result.png" alt="UI" width="45%">
+  <img src="assets/readme/ui_multiagents_judgement.png" alt="UI" width="45%">
+</p>
 
 ## Технологический стек
 
