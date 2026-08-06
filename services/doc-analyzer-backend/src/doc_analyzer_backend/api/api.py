@@ -49,12 +49,22 @@ app.include_router(doc_analysis_router, tags=["Doc Analysis"])
 app.include_router(data_sources_router, tags=["Data Sources"])
 app.include_router(tokens_router, tags=["Tokens Data"])
 
+ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:80",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1",
+    "http://127.0.0.1:80",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Set-Cookie"],
 )
 
 

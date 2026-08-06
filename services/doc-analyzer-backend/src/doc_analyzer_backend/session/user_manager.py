@@ -20,12 +20,13 @@ class UserManager:
     async def create_session(self) -> UserSession:
         session_id = str(uuid.uuid4())
 
+        llm_config = app_settings().llm
         prompt_repository = _create_prompt_repository()
         chromadb_client_factory = _create_chromadb_client_factory()
 
         logger.info("Agent initialization")
         agent = await Agent.create_agent(
-            llm_config=app_settings().llm,
+            llm_config=llm_config,
             prompt_repository=prompt_repository,
             chromadb_client_factory=chromadb_client_factory,
         )
