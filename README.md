@@ -3,9 +3,8 @@
 Монорепозиторий платформы для анализа документов с помощью AI-агентов.
 Система состоит из backend-сервиса на FastAPI и frontend-приложения на React, поддерживает загрузку файлов и URL, мультиагентный анализ, SSE-стриминг, учет токенов и стоимости.
 
-<p align="center">
-  <img src="assets/readme/ui_multiagents_progress.png" alt="UI" width="80%">
-</p>
+_Анализ документа с коррекцией и оценкой результата:_
+![UI](./assets/readme/ui_multiagents_progress.png)
 
 ## Состав проекта
 
