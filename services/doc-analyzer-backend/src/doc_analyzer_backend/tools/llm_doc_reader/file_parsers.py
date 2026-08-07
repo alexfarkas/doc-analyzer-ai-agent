@@ -217,7 +217,7 @@ class FileParser:
                 page_blocks.append(
                     "[Нет текстового слоя. Будет выполнен локальный OCR...]"
                 )
-            for j, tbl in enumerate(page.find_tables().extract()):
+            for j, tbl in enumerate(page.find_tables().tables):
                 if md := table_to_md(tbl, is_pdf=True):
                     page_blocks.append(f"Таблица {j + 1}\n\n{md}")
             blocks.append("\n\n".join(page_blocks))
