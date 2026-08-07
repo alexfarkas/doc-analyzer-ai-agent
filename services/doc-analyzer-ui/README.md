@@ -33,6 +33,7 @@ doc-analyzer-ui/                        # React frontend
 ├── Dockerfile                          # Multi-stage build (node -> nginx)
 ├── nginx.conf                          # SPA fallback, проксирование API, настройки SSE
 ├── package.json
+├── README.md
 ├── AGENT.md
 └── src/                                
     ├── main.jsx                        # Инициализация React

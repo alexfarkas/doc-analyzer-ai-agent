@@ -97,7 +97,10 @@ make test-packages
 ```text
 doc-analyzer-backend/
 ├── Dockerfile                          # Multi-stage build
-├── requirements.txt
+├── requirements.txt                    # Зависимости проекта
+├── .env                                # Переменные окружения для backend
+├── .env.example                        # Шаблон переменных окружения
+├── README.md
 ├── AGENT.md
 ├── src/
 │   └── doc_analyzer_backend/

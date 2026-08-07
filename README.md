@@ -241,13 +241,17 @@ make test-packages
 doc-analyzer-ai-agent/
 ├── docker-compose.yml                          # Оркестрация сервисов и профилей
 ├── Makefile                                    # Команды запуска, тестов, линтинга, сборки
-├── .env                                        # Переменные окружения
+├── .env                                        # Переменные окружения для docker-compose.yml
+├── .env.example                                # Шаблон переменных окружения
 ├── README.md
 │
 ├── services/
 │   ├── doc-analyzer-backend/                   # FastAPI backend
 │   │   ├── Dockerfile                          # Multi-stage build
-│   │   ├── requirements.txt
+│   │   ├── requirements.txt                    # Зависимости проекта
+│   │   ├── .env                                # Переменные окружения для backend
+│   │   ├── .env.example                        # Шаблон переменных окружения
+│   │   ├── README.md
 │   │   ├── AGENT.md
 │   │   ├── src/
 │   │   │   └── doc_analyzer_backend/
@@ -301,6 +305,7 @@ doc-analyzer-ai-agent/
 │       ├── Dockerfile                          # Multi-stage build (node -> nginx)
 │       ├── nginx.conf                          # SPA fallback, проксирование API, настройки Cookie, SSE
 │       ├── package.json
+│       ├── README.md
 │       ├── AGENT.md
 │       └── src/                                
 │           ├── main.jsx                        # Инициализация React
