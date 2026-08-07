@@ -83,11 +83,11 @@ infrastructure/
 # Volumes and Data
 # ==============================================================================
 volumes/
-src/doc_analyzer_backend/data/
-src/doc_analyzer_backend/documents/
+documents/
 backups/
 datasets/
 data/
+logs/
 
 # ==============================================================================
 # ML models

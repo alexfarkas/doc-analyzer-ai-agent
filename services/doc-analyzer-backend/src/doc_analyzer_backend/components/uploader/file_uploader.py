@@ -19,7 +19,9 @@ async def upload_file(file: UploadFile = File(...)):
     if ext not in app_settings().app.allowed_exts:
         raise AgentUnsupportedFileExtensionError(file_name)
 
-    upload_dir = os.path.join(os.getcwd(), app_settings().app.docs_dir)
+    upload_dir = app_settings().app.docs_dir
+
+    os.makedirs(upload_dir, exist_ok=True)
 
     base = os.path.splitext(file_name)[0]
     safe_base = "".join(c if c.isalnum() or c in "._-" else "_" for c in base)

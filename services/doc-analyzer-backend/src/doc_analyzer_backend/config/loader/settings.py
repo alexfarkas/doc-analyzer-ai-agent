@@ -13,6 +13,7 @@ from src.doc_analyzer_backend.config.app_config import AppConfig
 from src.doc_analyzer_backend.config.db_config import DBConfig
 from src.doc_analyzer_backend.config.llm_config import LLMConfig
 from src.doc_analyzer_backend.config.loader.aggregated_source import AggregatedConfigSource
+from src.doc_analyzer_backend.config.loader.paths import PROJECT_ROOT
 from src.doc_analyzer_backend.config.logger_config import LoggerConfig
 from src.doc_analyzer_backend.config.pricing_config import PricingConfig
 from src.doc_analyzer_backend.config.provider_config import ProviderConfig
@@ -35,6 +36,8 @@ class AppSettings(BaseSettings):
     pricing: PricingConfig = Field(default_factory=PricingConfig)
 
     model_config = SettingsConfigDict(
+        env_file=str(PROJECT_ROOT / ".env"),
+        env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
@@ -57,16 +60,14 @@ class AppSettings(BaseSettings):
         3. Системные переменные окружения
         4. .env файл (самый высокий приоритет)
         """
-        project_root_dir: Path = Path(__file__).resolve().parents[4]
-
-        filepath_app = cls._get_config_path(project_root_dir=project_root_dir, filename="app.yaml")
-        filepath_service = cls._get_config_path(project_root_dir=project_root_dir, filename="service.yaml")
-        filepath_llm = cls._get_config_path(project_root_dir=project_root_dir, filename="llm.yaml")
-        filepath_provider = cls._get_config_path(project_root_dir=project_root_dir, filename="provider.yaml")
-        filepath_db = cls._get_config_path(project_root_dir=project_root_dir, filename="db.yaml")
-        filepath_rag = cls._get_config_path(project_root_dir=project_root_dir, filename="rag.yaml")
-        filepath_logger = cls._get_config_path(project_root_dir=project_root_dir, filename="logger.yaml")
-        filepath_pricing = cls._get_config_path(project_root_dir=project_root_dir, filename="pricing.yaml")
+        filepath_app = cls._get_config_path(filename="app.yaml")
+        filepath_service = cls._get_config_path(filename="service.yaml")
+        filepath_llm = cls._get_config_path(filename="llm.yaml")
+        filepath_provider = cls._get_config_path(filename="provider.yaml")
+        filepath_db = cls._get_config_path(filename="db.yaml")
+        filepath_rag = cls._get_config_path(filename="rag.yaml")
+        filepath_logger = cls._get_config_path(filename="logger.yaml")
+        filepath_pricing = cls._get_config_path(filename="pricing.yaml")
 
         return (
             init_settings,
@@ -82,13 +83,13 @@ class AppSettings(BaseSettings):
                     filepath_logger,
                     filepath_pricing,
                 ],
-                env_file=".env",
+                env_file=str(PROJECT_ROOT / ".env"),
             ),
         )
 
     @classmethod
-    def _get_config_path(cls, project_root_dir: Path, filename: str) -> str:
-        filepath = os.path.join(project_root_dir, CONFIG_DIR, filename)
+    def _get_config_path(cls, filename: str) -> str:
+        filepath = str(PROJECT_ROOT / CONFIG_DIR / filename)
         if not os.path.isfile(filepath):
             logger.error(f"Config filepath not found in '{filepath}'.")
             raise FileNotFoundError(f"Config filepath not found in '{filepath}'.")

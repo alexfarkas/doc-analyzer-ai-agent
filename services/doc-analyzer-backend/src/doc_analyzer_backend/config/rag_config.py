@@ -1,4 +1,8 @@
-from pydantic import Field, SecretStr, BaseModel
+from pathlib import Path
+
+from pydantic import Field, SecretStr, BaseModel, field_validator
+
+from src.doc_analyzer_backend.config.loader.paths import PROJECT_ROOT
 
 
 class RAGConfig(BaseModel):
@@ -20,3 +24,14 @@ class RAGConfig(BaseModel):
     use_local_vector_db: bool = Field(
         default=True, description="Use local RAG vector database"
     )
+
+    @field_validator("path", mode="before")
+    @classmethod
+    def resolve_path(cls, value: str) -> str:
+        """Преобразует относительный путь в абсолютный от корня проекта."""
+        if not value:
+            return value
+        path = Path(value)
+        if path.is_absolute():
+            return str(path)
+        return str((PROJECT_ROOT / path).resolve())

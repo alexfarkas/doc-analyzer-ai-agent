@@ -53,7 +53,10 @@ async def read_web_page_from_url(url: str):
 
 
 async def _write_web_page_data_to_file(text: str, url: str):
-    upload_dir = os.path.join(os.getcwd(), app_settings().app.docs_dir)
+    upload_dir = app_settings().app.docs_dir
+
+    os.makedirs(upload_dir, exist_ok=True)
+
     safe_url = "".join(c if c.isalnum() or c in "_-" else "_" for c in url)
     file_name = f"{safe_url}-{uuid.uuid4().hex[:10]}.md"
     file_path = os.path.join(upload_dir, file_name)
