@@ -13,42 +13,36 @@ RUN pip install --no-cache-dir --upgrade pip build \
 
 FROM python:3.14.5-slim-bookworm AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    libmagic1 \
-    poppler-utils \
-    tesseract-ocr \
-    tesseract-ocr-rus \
-    tesseract-ocr-eng \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        libmagic1 \
+        poppler-utils \
+        tesseract-ocr \
+        tesseract-ocr-rus \
+        tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r appuser \
     && useradd -r -g appuser -d /app -s /sbin/nologin appuser
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade pip
+COPY --from=packages-builder /build/shared/*/dist/*.whl /tmp/wheels/
 
-COPY --from=packages-builder /build/shared/agent-enums/dist/*.whl /tmp/wheels/
-COPY --from=packages-builder /build/shared/db-repository/dist/*.whl /tmp/wheels/
-COPY --from=packages-builder /build/shared/rag-client/dist/*.whl /tmp/wheels/
-
-RUN pip install --no-cache-dir \
-    /tmp/wheels/agent_enums-*.whl \
-    /tmp/wheels/db_repository-*.whl \
-    /tmp/wheels/rag_client-*.whl \
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir /tmp/wheels/*.whl \
     && rm -rf /tmp/wheels
-
-COPY services/doc-analyzer-backend /app/backend
 
 WORKDIR /app/backend
 
-COPY services/doc-analyzer-backend/requirements.txt /app/backend/requirements.txt
+COPY services/doc-analyzer-backend/requirements.txt ./
 
 RUN pip install --no-cache-dir \
-    torch torchvision torchaudio \
-    --index-url https://download.pytorch.org/whl/cpu
+    torch==2.12.1 torchvision==0.27.1 torchaudio==2.11.0 \
+    --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY services/doc-analyzer-backend ./
 
 RUN mkdir -p /app/documents /app/logs \
     && chown -R appuser:appuser /app
