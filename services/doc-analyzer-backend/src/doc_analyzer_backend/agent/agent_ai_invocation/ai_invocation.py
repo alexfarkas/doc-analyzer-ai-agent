@@ -22,8 +22,11 @@ async def ai_invoke_track(
     start = time.perf_counter()
     logger.info(f"Agent {agent_id}: {type_message} is starting...")
 
+    logger.debug(f"Messages for AI: {truncate_value(messages)}")
+
     result = await app.ainvoke({"messages": messages})
     final_msg = await extract_final_answer(result["messages"])
+
     logger.debug(f"AI final message: {truncate_value(final_msg)}")
 
     elapsed = time.perf_counter() - start

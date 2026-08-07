@@ -41,7 +41,13 @@ async def agent_clarify(
         )
 
     answer_seq = data.get_answer_seq(answer_index)
-    clarifying_answer = next((a for a in answer_seq.answers if a.status == AnswerStatus.FINAL), None)
+    clarifying_answer_item = next((a for a in answer_seq.answers if a.status == AnswerStatus.FINAL), None)
+    if clarifying_answer_item is None:
+        logger.error("Clarifying answer not found")
+        raise ValueError("Clarifying answer not found")
+
+    clarifying_answer = clarifying_answer_item.answer
+
     logger.debug(f"Final AI answer to clarify: {clarifying_answer}")
 
     prompts = await get_prompts(
